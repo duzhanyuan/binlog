@@ -19,7 +19,7 @@ var (
 )
 
 type TableInfoMapper interface {
-	GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, bool)
+	GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, error)
 }
 
 //get Streamer from binlog which format row
@@ -207,8 +207,8 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			name := meta.NewMysqlTableName(tm.Database, tm.Name)
 
 			var info meta.MysqlTableInfo
-			if info, ok = s.tableMapper.GetTableInfo(name); !ok {
-				return pos, fmt.Errorf("parseEvents unknown table %v in schema", name.String())
+			if info, err = s.tableMapper.GetTableInfo(name); err != nil {
+				return pos, fmt.Errorf("parseEvents GetTableInfo fail. table: %v, err： %v", name.String(), err)
 			}
 
 			if len(info.Columns) != tm.CanBeNull.Count() {

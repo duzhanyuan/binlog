@@ -26,7 +26,7 @@ var (
 	ErrBadConn           = errors.New("bad connection")
 )
 
-var errLog = Logger(log.New(os.Stderr, "[mysql] ", log.Ldate|log.Ltime|log.Lshortfile))
+var errLog = Logger(log.New(os.Stderr, "[dump] ", log.Ldate|log.Ltime|log.Lshortfile))
 
 type MyRows interface {
 	Columns() []string

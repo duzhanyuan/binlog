@@ -50,8 +50,8 @@ func newMockMapper() *mockMapper {
 	return &mockMapper{}
 }
 
-func (m *mockMapper) GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, bool) {
-	return tesInfo, true
+func (m *mockMapper) GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, error) {
+	return tesInfo, nil
 }
 
 func getInputData() []event.BinlogEvent {
