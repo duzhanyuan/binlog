@@ -43,3 +43,6 @@ github.com/go-sql-driver/mysql已经支持了所有的协议包的读写，但�
 + binlog位置,以文件名和位移量作定义
 + 表信息，主要是表名和列信息
 + 事务信息，主要是一个完整的binlog events(以begin开始， 以commit结束)
+
+## Documents
+你可以使用 godoc -http=:6060命令，然后在浏览器中输入http://localhost:6060/pkg/github.com/onlyac0611/binlog，就可以查看相关文档 
