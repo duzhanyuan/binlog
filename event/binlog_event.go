@@ -1,13 +1,12 @@
-/*
- * Modify based on github.com/youtube/vitess/go/mysql.
- *
- * 本binlog包完全支持mysql 5.6.x的所有binlog格式解析，
- * 支持5.7.x的绝大多数binlog格式解析，仅仅不支持JSON
- * binlog格式解析。该binlog包完成了BinlogEvent接口，
- * 以binlog position作为标识，支持Rotate以及NextPosition
- * 来标识binlog的解析位置。
- *
- */
+//package event用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
+// 完全支持mysql 5.6.x的所有数据格式解析，
+// 支持5.7.x的绝大多数数据格式解析，仅仅不支持JSON数据。
+//
+// github.com/youtube/vitess/go/mysql已经完整地支持mysql 5.6+所有的bonlog解析，但是由于以下原因需要修改：
+// 该包在vitess中有较多依赖，不便在其他项目中使用，
+// 该包的mysql协议有些变化，如Decimal数据小数点后的缺少前置0等问题。
+//
+// 目前event已经支持m/github.com/onlyac0611/binlogysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更，未来将支持全部
 package event
 
 import (

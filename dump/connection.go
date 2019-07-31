@@ -1,12 +1,12 @@
-/*
- * Modify based on github.com/go-sql-driver/mysql
- *
- * 本dump包实现了MysqlConn，来和mysql库进行binlog dump，
- * 然后通过binlog position获得binlog日志。本dump包不仅
- * 通过MysqlConn可以执行简单的sql命令，如set命令，而且
- * 给mysql库发送dump包通知其binlog日志的位置。
- *
- */
+// package dump 用于dump协议交互的，从github.com/go-sql-driver/mysql的基础上修改而来，主要功能如下：
+// 通过MysqlConn可以执行简单的sql命令，如set命令，
+// 通过MysqlConn来和mysql库进行binlog dump
+//
+// github.com/go-sql-driver/mysql已经支持了所有的协议包的读写，但是由于以下原因需要修改：
+// 该包不支持dump协议的交互，
+// 该包在解析mysql数据时使用了缓存，导致与event冲突。
+//
+// 目前dump已经支持单条连接完成dump协议的交互，取消了缓存机制，使其与event不再冲突。
 package dump
 
 import (
@@ -18,6 +18,7 @@ import (
 
 const defaultBufSize = 4096
 
+//mysql连接，用于执行dump和其他命令
 type MysqlConn struct {
 	//buf              buffer
 	reader           *bufio.Reader
@@ -211,14 +212,17 @@ func (mc *MysqlConn) Exec(query string) error {
 	return mc.exec(query)
 }
 
+//通知开始从哪个binlog位置开始以serverID为编号开始同步数据
 func (mc *MysqlConn) NoticeDump(serverID, offset uint32, filename string, flags uint16) error {
 	return mc.writeDumpBinlogPosPacket(serverID, offset, filename, flags)
 }
 
+//读取mysql协议包
 func (mc *MysqlConn) ReadPacket() ([]byte, error) {
 	return mc.readPacket()
 }
 
+//处理mysql返回的错误
 func (mc *MysqlConn) HandleErrorPacket(data []byte) error {
 	return mc.handleErrorPacket(data)
 }

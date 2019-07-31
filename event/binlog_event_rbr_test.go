@@ -1,4 +1,3 @@
-// modify based on github.com/youtube/vitess/go/mysql
 package event
 
 import (

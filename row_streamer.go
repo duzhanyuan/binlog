@@ -1,8 +1,4 @@
-/* modify based on github.com/youtube/vitess/go/vt/binlog/binlog_streamer.go
- *
- * 专门用来RowStreamer解析row模式的binlog event，将其变为应的事务。
- *
- */
+//package binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更，提供轻量级，快速的dump协议交互以及binlog的row模式下的格式解析
 package binlog
 
 import (
@@ -18,11 +14,13 @@ var (
 	ErrStreamEOF = errors.New("stream reached EOF")
 )
 
+// 获取表信息的接口
 type TableInfoMapper interface {
 	GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, error)
 }
 
-//get Streamer from binlog which format row
+//RowStreamer modify based on github.com/youtube/vitess/go/vt/binlog/binlog_streamer.go
+//专门用来RowStreamer解析row模式的binlog event，将其变为对应的事务
 type RowStreamer struct {
 	dsn             string
 	serverID        uint32
@@ -31,6 +29,11 @@ type RowStreamer struct {
 	sendTransaction SendTransactionFunc
 }
 
+// 处理事务信息函数，你可以将一个chan注册到这个函数中如
+//   func getTransaction(tran *meta.Transaction) error{
+//	     Transactions <- tran
+//	     return nil
+//   }
 type SendTransactionFunc func(*meta.Transaction) error
 
 type tableCache struct {
@@ -38,6 +41,7 @@ type tableCache struct {
 	tableInfo meta.MysqlTableInfo
 }
 
+//dsn是mysql数据库的信息，serverID是标识该数据库的信息
 func NewRowStreamer(dsn string, serverID uint32,
 	tableMapper TableInfoMapper) (*RowStreamer, error) {
 	return &RowStreamer{
@@ -47,19 +51,21 @@ func NewRowStreamer(dsn string, serverID uint32,
 	}, nil
 }
 
+//设置开始的binlog位置
 func (s *RowStreamer) SetStartBinlogPosition(startPos meta.BinlogPosition) {
 	s.startPos = startPos
 }
 
+//注册一个处理事务信息函数到Stream中
 func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactionFunc) error {
-	conn, err := NewSlaveConn(s.dsn)
+	conn, err := newSlaveConn(s.dsn)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer conn.close()
 	s.sendTransaction = sendTransaction
 	var events <-chan event.BinlogEvent
-	events, err = conn.StartDumpFromBinlogPosition(ctx, s.serverID, s.startPos)
+	events, err = conn.startDumpFromBinlogPosition(ctx, s.serverID, s.startPos)
 	s.startPos, err = s.parseEvents(ctx, events)
 	if err != nil {
 		logger.Errorf("Stream parseEvents failed in pos: %#v error: %v", s.startPos, err)

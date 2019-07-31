@@ -1,7 +1,9 @@
 package binlog
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/onlyac0611/binlog/event"
@@ -155,6 +157,95 @@ func getInputData() []event.BinlogEvent {
 	}
 }
 
+func checkTransactionEqual(t *meta.Transaction, right *meta.Transaction) error {
+	if t.NowPosition != right.NowPosition {
+		return fmt.Errorf("NowPosition is not equal. left: %v, right: %v", t.NowPosition, right.NowPosition)
+	}
+	if t.NextPosition != right.NextPosition {
+		return fmt.Errorf("NextPosition is not equal. left: %v, right: %v", t.NextPosition, right.NextPosition)
+	}
+
+	if len(t.Events) != len(right.Events) {
+		return fmt.Errorf("len of Events is not match.left: %v right: %v", len(t.Events), len(right.Events))
+	}
+
+	for i := range t.Events {
+		if err := checkStreamEventEqual(t.Events[i], right.Events[i]); err != nil {
+			return fmt.Errorf("%d RowValues is not match for %v", i, err)
+		}
+	}
+	return nil
+}
+
+func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
+	if s.Type != right.Type {
+		return fmt.Errorf("type is not equal. left: %v, right: %v", s.Type, right.Type)
+	}
+	if s.Table != right.Table {
+		return fmt.Errorf("TableName is not equal. left: %v, right: %v", s.Table, right.Table)
+	}
+	if s.Timestamp != right.Timestamp {
+		return fmt.Errorf("timestamp is not equal. left: %v, right: %v", s.Timestamp, right.Timestamp)
+	}
+	if s.SQL != right.SQL {
+		return fmt.Errorf("sql is not equal. left: %v, right: %v", s.SQL, right.SQL)
+	}
+
+	if len(s.RowValues) != len(right.RowValues) {
+		return fmt.Errorf("len of RowValues is not match.left: %v right: %v",
+			len(s.RowValues), len(right.RowValues))
+	}
+
+	if len(s.RowIdentifies) != len(right.RowIdentifies) {
+		return fmt.Errorf("len of RowIdentifies is not match.left: %v right: %v",
+			len(s.RowIdentifies), len(right.RowIdentifies))
+	}
+
+	for i := range s.RowValues {
+		if err := checkRowDataEqual(s.RowValues[i], right.RowValues[i]); err != nil {
+			return fmt.Errorf("%d RowValues is not match for %v", i, err)
+		}
+	}
+
+	for i := range s.RowIdentifies {
+		if err := checkRowDataEqual(s.RowIdentifies[i], right.RowIdentifies[i]); err != nil {
+			return fmt.Errorf("%d RowIdentifies is not match for %v", i, err)
+		}
+	}
+	return nil
+}
+
+func checkRowDataEqual(r *meta.RowData, right *meta.RowData) error {
+	if len(r.Columns) != len(right.Columns) {
+		return fmt.Errorf("len of Columns is not match.left: %v right: %v", len(r.Columns), len(right.Columns))
+	}
+	for i := range r.Columns {
+		if err := checkColumnDataEqual(r.Columns[i], right.Columns[i]); err != nil {
+			return fmt.Errorf("%d Column is not match for %v", i, err)
+		}
+	}
+	return nil
+}
+
+func checkColumnDataEqual(c *meta.ColumnData, right *meta.ColumnData) error {
+	if c.Filed != right.Filed {
+		return fmt.Errorf("filed is not equal. left: %v, right: %v", c.Filed, right.Filed)
+	}
+
+	if c.Type != right.Type {
+		return fmt.Errorf("type is not equal. left: %v, right: %v", c.Type, right.Type)
+	}
+
+	if c.IsEmpty != right.IsEmpty {
+		return fmt.Errorf("isEmpty is not equal. left: %v, right: %v", c.IsEmpty, right.IsEmpty)
+	}
+
+	if bytes.Compare(c.Data, right.Data) != 0 {
+		return fmt.Errorf("data is not equal. left: %v, right: %v", string(c.Data), string(right.Data))
+	}
+	return nil
+}
+
 func TestRowStreamer_parseEvents(t *testing.T) {
 
 	input := getInputData()
@@ -288,7 +379,7 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 		t.Fatalf("parseEvents err != %v, err: %v", ErrStreamEOF, err)
 	}
 
-	if err := out.CheckEqual(want); err != nil {
+	if err := checkTransactionEqual(out, want); err != nil {
 		t.Fatalf("NowPosition want != out, err: %v", err)
 	}
 }

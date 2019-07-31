@@ -1,4 +1,3 @@
-// modify based on github.com/go-sql-driver/mysql
 package dump
 
 const defaultCollation = "utf8_general_ci"

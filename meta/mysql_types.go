@@ -118,6 +118,7 @@ const (
 	ColumnTypeGeometry   = event.TypeGeometry
 )
 
+//从binlog中获取的列类型
 type ColumnType int
 
 var (
@@ -266,6 +267,7 @@ func (c ColumnType) IsGeometry() bool {
 	}
 }
 
+//binlog 格式
 type BinlogFormatType string
 
 const (

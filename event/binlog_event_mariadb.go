@@ -1,4 +1,3 @@
-// modify based on github.com/youtube/vitess/go/mysql
 package event
 
 // mariadbBinlogEvent wraps a raw packet buffer and provides methods to examine
