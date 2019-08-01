@@ -1,7 +1,10 @@
 # binlog
+
+[![GoDoc][doc-img]][doc][![Coverage Status][cov-img]][cov]
+
 binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更，提供轻量级，快速的dump协议交互以及binlog的row模式下的格式解析
 
-## requests
+## Requests
 + mysql 5.6+
 + golang 1.9+
 
@@ -44,5 +47,7 @@ github.com/go-sql-driver/mysql已经支持了所有的协议包的读写，但�
 + 表信息，主要是表名和列信息
 + 事务信息，主要是一个完整的binlog events(以begin开始， 以commit结束)
 
-## Documents
-你可以使用 godoc -http=:6060命令，然后在浏览器中输入http://localhost:6060/pkg/github.com/onlyac0611/binlog，就可以查看相关文档 
+[doc-img]: https://godoc.org/github.com/onlyac0611/binlog?status.svg
+[doc]: https://godoc.org/github.com/onlyac0611/binlog
+[cov-img]: https://coveralls.io/repos/github/onlyac0611/binlog/badge.svg?branch=master
+[cov]: https://coveralls.io/github/onlyac0611/binlog?branch=master
