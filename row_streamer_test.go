@@ -388,11 +388,11 @@ func TestRowStreamer_SetStartBinlogPosition(t *testing.T) {
 	m := newMockMapper()
 	r, err := NewRowStreamer(testDSN, testServerID, m)
 	if err != nil {
-		t.Fatalf("NewRowStreamer err: %#v", err)
+		t.Fatalf("NewRowStreamer err: %v", err)
 		return
 	}
 	r.SetStartBinlogPosition(testBinlogPosParseEvents)
 	if r.startPos != testBinlogPosParseEvents {
-		t.Fatalf("want != out, input:%#v want:%#v out %#v", testBinlogPosParseEvents, testBinlogPosParseEvents, r.startPos)
+		t.Fatalf("want != out, input:%+v want:%+v out %+v", testBinlogPosParseEvents, testBinlogPosParseEvents, r.startPos)
 	}
 }
