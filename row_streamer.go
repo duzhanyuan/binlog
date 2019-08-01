@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/onlyac0611/binlog/dump"
 	"github.com/onlyac0611/binlog/event"
 	"github.com/onlyac0611/binlog/meta"
 )
@@ -58,7 +59,9 @@ func (s *RowStreamer) SetStartBinlogPosition(startPos meta.BinlogPosition) {
 
 //注册一个处理事务信息函数到Stream中
 func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactionFunc) error {
-	conn, err := newSlaveConn(s.dsn)
+	conn, err := newSlaveConn(func() (conn dumpConn, e error) {
+		return dump.NewMysqlConn(s.dsn)
+	})
 	if err != nil {
 		return err
 	}

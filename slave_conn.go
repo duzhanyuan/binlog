@@ -3,33 +3,43 @@ package binlog
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/onlyac0611/binlog/dump"
 	"github.com/onlyac0611/binlog/event"
 	"github.com/onlyac0611/binlog/meta"
 )
 
+type dumpConn interface {
+	Close() error
+	Exec(string) error
+	NoticeDump(uint32, uint32, string, uint16) error
+	ReadPacket() ([]byte, error)
+	HandleErrorPacket([]byte) error
+}
+
 // slaveConn modify based on github.com/youtube/vitess/go/vt/mysqlctl/slave_connection.go
 // slaveConn通过StartDumpFromBinlogPosition和mysql库进行binlog dump，将自己伪装成slave，
 // 先执行SET @master_binlog_checksum=@@global.binlog_checksum，然后发送 binlog dump包，
 // 最后获取binlog日志，通过chan将binlog日志通过binlog event的格式传出。
 type slaveConn struct {
-	mc     *dump.MysqlConn
-	cancel context.CancelFunc
+	dc          dumpConn
+	cancel      context.CancelFunc
+	destruction sync.Once
 }
 
-func newSlaveConn(dsn string) (*slaveConn, error) {
-	m, err := dump.NewMysqlConn(dsn)
+func newSlaveConn(conn func() (dumpConn, error)) (*slaveConn, error) {
+	m, err := conn()
 	if err != nil {
 		return nil, err
 	}
 
 	s := &slaveConn{
-		mc: m,
+		dc: m,
 	}
 
 	if err := s.prepareForReplication(); err != nil {
-		s.mc.Close()
+		s.close()
 		return nil, err
 	}
 
@@ -37,15 +47,17 @@ func newSlaveConn(dsn string) (*slaveConn, error) {
 }
 
 func (s *slaveConn) close() {
-	if s.mc != nil {
-		s.mc.Close()
-		logger.Infof("Close closing slave socket to unblock reads")
-		s.mc = nil
-	}
+	s.destruction.Do(
+		func() {
+			if s.dc != nil {
+				s.dc.Close()
+				logger.Infof("Close closing slave socket to unblock reads")
+			}
+		})
 }
 
 func (s *slaveConn) prepareForReplication() error {
-	if err := s.mc.Exec("SET @master_binlog_checksum=@@global.binlog_checksum"); err != nil {
+	if err := s.dc.Exec("SET @master_binlog_checksum=@@global.binlog_checksum"); err != nil {
 		return fmt.Errorf("prepareForReplication failed to set @master_binlog_checksum=@@global.binlog_checksum: %v", err)
 	}
 	return nil
@@ -55,12 +67,12 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	ctx, s.cancel = context.WithCancel(ctx)
 
 	logger.Infof("startDumpFromBinlogPosition sending binlog dump command: startPos: %v slaveID: %v", pos, serverID)
-	if err := s.mc.NoticeDump(serverID, uint32(pos.Offset), pos.FileName, 0); err != nil {
+	if err := s.dc.NoticeDump(serverID, uint32(pos.Offset), pos.FileName, 0); err != nil {
 		logger.Errorf("startDumpFromBinlogPosition couldn't send binlog dump command err: %v", err)
 		return nil, err
 	}
 
-	buf, err := s.mc.ReadPacket()
+	buf, err := s.dc.ReadPacket()
 	if err != nil {
 		logger.Errorf("startDumpFromBinlogPosition couldn't start binlog dump: %v", err)
 		return nil, err
@@ -72,7 +84,6 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	go func() {
 		defer func() {
 			close(eventChan)
-			s.close()
 			logger.Infof("startDumpFromBinlogPosition close slave dump thread to end")
 		}()
 
@@ -82,20 +93,21 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 				logger.Infof("startDumpFromBinlogPosition received EOF packet in binlog dump: %#v", buf)
 				return
 			case dump.PacketERR:
-				err := s.mc.HandleErrorPacket(buf)
-				logger.Infof("startDumpFromBinlogPosition received error packet in binlog dump: %v", err)
+				err := s.dc.HandleErrorPacket(buf)
+				logger.Errorf("startDumpFromBinlogPosition received error packet in binlog dump. error:: %v", err)
 				return
 			}
 
 			select {
 			case eventChan <- event.NewMysql56BinlogEvent(buf[1:]):
 			case <-ctx.Done():
+				logger.Infof("startDumpFromBinlogPosition stop by ctx. reason: %v", ctx.Err())
 				return
 			}
 
-			buf, err = s.mc.ReadPacket()
+			buf, err = s.dc.ReadPacket()
 			if err != nil {
-				logger.Errorf("startDumpFromBinlogPosition couldn't start binlog dump: %v", err)
+				logger.Errorf("startDumpFromBinlogPosition couldn't start binlog dump. error: %v", err)
 				return
 			}
 		}
