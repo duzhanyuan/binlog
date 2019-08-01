@@ -63,7 +63,7 @@ func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactio
 		return dump.NewMysqlConn(s.dsn)
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("newMysqlConn fail. err: %v", err)
 	}
 	defer conn.close()
 	s.sendTransaction = sendTransaction
@@ -71,9 +71,9 @@ func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactio
 	events, err = conn.startDumpFromBinlogPosition(ctx, s.serverID, s.startPos)
 	s.startPos, err = s.parseEvents(ctx, events)
 	if err != nil {
-		logger.Errorf("Stream parseEvents failed in pos: %#v error: %v", s.startPos, err)
+		return fmt.Errorf("parseEvents fail in pos: %+v error: %v", s.startPos, err)
 	}
-	return err
+	return nil
 }
 
 func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.BinlogEvent) (meta.BinlogPosition, error) {
@@ -87,7 +87,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 	begin := func() {
 		if tranEvents != nil {
 			// If this happened, it would be a legitimate error.
-			logger.Errorf("parseEvents BEGIN in binlog stream while still in another transaction; dropping %d transactionEvents: %#v", len(tranEvents), tranEvents)
+			logger.Errorf("parseEvents BEGIN in binlog stream while still in another transaction; dropping %d transactionEvents: %+v", len(tranEvents), tranEvents)
 		}
 		tranEvents = make([]*meta.StreamEvent, 0, 10)
 		autocommit = false
@@ -122,7 +122,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 
 		// Validate the buffer before reading fields from it.
 		if !ev.IsValid() {
-			return pos, fmt.Errorf("parseEvents can't parse binlog event, invalid data: %#v", ev)
+			return pos, fmt.Errorf("parseEvents can't parse binlog event, invalid data: %+v", ev)
 		}
 
 		// We need to keep checking for FORMAT_DESCRIPTION_EVENT even after we've
@@ -131,9 +131,9 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 		if ev.IsFormatDescription() {
 			format, err = ev.Format()
 			if err != nil {
-				return pos, fmt.Errorf("parseEvents can't parse FORMAT_DESCRIPTION_EVENT: %v, event data: %#v", err, ev)
+				return pos, fmt.Errorf("parseEvents can't parse FORMAT_DESCRIPTION_EVENT: %v, event data: %+v", err, ev)
 			}
-			logger.Debugf("parseEvents pos: %#v binlog event is a format description event:%#v", ev.NextPosition(), format)
+			logger.Debugf("parseEvents pos: %+v binlog event is a format description event:%+v", ev.NextPosition(), format)
 			continue
 		}
 
@@ -146,24 +146,24 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if ev.IsRotate() {
 				continue
 			}
-			return pos, fmt.Errorf("parseEvents got a real event before FORMAT_DESCRIPTION_EVENT: %#v", ev)
+			return pos, fmt.Errorf("parseEvents got a real event before FORMAT_DESCRIPTION_EVENT: %+v", ev)
 		}
 
 		// Strip the checksum, if any. We don't actually verify the checksum, so discard it.
 		ev, _, err = ev.StripChecksum(format)
 		if err != nil {
-			return pos, fmt.Errorf("parseEvents can't strip checksum from binlog event: %v, event data: %#v", err, ev)
+			return pos, fmt.Errorf("parseEvents can't strip checksum from binlog event: %v, event data: %+v", err, ev)
 		}
 
 		switch {
 		case ev.IsXID(): // XID_EVENT (equivalent to COMMIT)
-			logger.Debugf("parseEvents pos: %v binlog event is a xid event:", pos, ev)
+			logger.Debugf("parseEvents pos: %+v binlog event is a xid event:", pos, ev)
 			if err = commit(ev); err != nil {
 				return pos, err
 			}
 
 		case ev.IsRotate():
-			logger.Debugf("parseEvents pos: %v binlog event is a xid event %+v:", pos, ev)
+			logger.Debugf("parseEvents pos: %+v binlog event is a xid event %+v:", pos, ev)
 			var filename string
 			var offset int64
 			if filename, offset, err = ev.Rotate(format); err != nil {
@@ -174,11 +174,11 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 		case ev.IsQuery():
 			q, err := ev.Query(format)
 			if err != nil {
-				return pos, fmt.Errorf("parseEvents can't get query from binlog event: %v, event data: %#v", err, ev)
+				return pos, fmt.Errorf("parseEvents can't get query from binlog event: %v, event data: %+v", err, ev)
 			}
 			typ := meta.GetStatementCategory(q.SQL)
 
-			logger.Debugf("parseEvents pos: %v binlog event is a query event: %v query: %v", pos, ev, q.SQL)
+			logger.Debugf("parseEvents pos: %+v binlog event is a query event: %+v query: %v", pos, ev, q.SQL)
 
 			switch typ {
 			case meta.StatementBegin:
@@ -191,7 +191,8 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 					return pos, err
 				}
 			default:
-				logger.Errorf("parseEvents we have a sql in binlog position:%#v error: %v", pos, fmt.Errorf("parseEvents SQL query %s  statement in row binlog SQL: %s", typ.String(), q.SQL))
+				logger.Errorf("parseEvents we have a sql in binlog position: %+v error: %v", pos,
+					fmt.Errorf("parseEvents SQL query %s  statement in row binlog SQL: %s", typ.String(), q.SQL))
 				//return pos, fmt.Errorf("parseEvents SQL query %s  statement in row binlog SQL: %s", typ.String(), q.SQL)
 			}
 
@@ -202,7 +203,8 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if err != nil {
 				return pos, err
 			}
-			logger.Debugf("parseEvents pos: %v binlog event is a table map event, tableID: %v table map:%+v", pos, tableID, *tm)
+			logger.Debugf("parseEvents pos: %+v binlog event is a table map event, tableID: %v table map: %+v",
+				pos, tableID, *tm)
 
 			if _, ok = tablesMaps[tableID]; ok {
 				tablesMaps[tableID].tableMap = tm
@@ -221,8 +223,9 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			}
 
 			if len(info.Columns) != tm.CanBeNull.Count() {
-				return meta.BinlogPosition{}, fmt.Errorf("parseEvents the length of column in tableMap(%d) did not equal to "+
-					"the length of column in table info(%d)", tm.CanBeNull.Count(), len(info.Columns))
+				return meta.BinlogPosition{},
+					fmt.Errorf("parseEvents the length of column in tableMap(%d) "+
+						"did not equal to the length of column in table info(%d)", tm.CanBeNull.Count(), len(info.Columns))
 			}
 			tc.tableInfo = info
 			tablesMaps[tableID] = tc
@@ -233,12 +236,14 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if !ok {
 				return pos, fmt.Errorf("parseEvents unknown tableID %v in WriteRows event", tableID)
 			}
-			logger.Debugf("parseEvents pos: %v binlog event is a write rows event, tableID: %v tc.tableMap: %+v", pos, tableID, tc.tableMap)
+			logger.Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v tc.tableMap: %+v",
+				pos, tableID, tc.tableMap)
 			rows, err := ev.Rows(format, tc.tableMap)
 			if err != nil {
 				return pos, err
 			}
-			logger.Debugf("parseEvents pos: %v binlog event is a write rows event, tableID: %v rows: %+v", pos, tableID, rows)
+			logger.Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v rows: %+v",
+				pos, tableID, rows)
 
 			tranEvent, err := appendInsertEventFromRows(tc, &rows, int64(ev.Timestamp()))
 			if err != nil {
@@ -258,13 +263,15 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if !ok {
 				return pos, fmt.Errorf("parseEvents unknown tableID %v in UpdateRows event", tableID)
 			}
-			logger.Debugf("parseEvents pos:%v binlog event is a update rows event, tableID: %v tc.tableMap:%+v", pos, tableID, tc.tableMap)
+			logger.Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v tc.tableMap: %+v",
+				pos, tableID, tc.tableMap)
 			rows, err := ev.Rows(format, tc.tableMap)
 			if err != nil {
 				return pos, err
 			}
 
-			logger.Debugf("parseEvents pos: %v binlog event is a update rows event, tableID: %v rows: %v", pos, tableID, rows)
+			logger.Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v rows: %+v",
+				pos, tableID, rows)
 
 			tranEvent, err := appendUpdateEventFromRows(tc, &rows, int64(ev.Timestamp()))
 			if err != nil {
@@ -280,17 +287,19 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			tableID := ev.TableID(format)
 			tc, ok := tablesMaps[tableID]
 			if !ok {
-				return pos, fmt.Errorf("parseEvents unknown tableID %v in DeleteRows event ", tableID)
+				return pos, fmt.Errorf("parseEvents unknown tableID %v in DeleteRows event", tableID)
 			}
 
-			logger.Debugf("parseEvents pos: %v binlog event is a delete rows event, tableID: %v tc.tableMap: %v", pos, tableID, tc.tableMap)
+			logger.Debugf("parseEvents pos: %+v binlog event is a delete rows event, tableID: %v tc.tableMap: %+v",
+				pos, tableID, tc.tableMap)
 
 			rows, err := ev.Rows(format, tc.tableMap)
 			if err != nil {
 				return pos, err
 			}
 
-			logger.Debugf("parseEvents pos: %v", "binlog event is a delete rows event, tableID: %v rows: %v", pos, tableID, rows)
+			logger.Debugf("parseEvents pos: %+v", "binlog event is a delete rows event, tableID: %v rows: %+v",
+				pos, tableID, rows)
 			tranEvent, err := appendDeleteEventFromRows(tc, &rows, int64(ev.Timestamp()))
 			if err != nil {
 				return pos, err
@@ -303,19 +312,19 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 				}
 			}
 		case ev.IsPreviousGTIDs():
-			logger.Debugf("parseEvents pos: %v binlog event is a PreviousGTIDs event: %v", pos, ev)
+			logger.Debugf("parseEvents pos: %+v binlog event is a PreviousGTIDs event: %+v", pos, ev)
 		case ev.IsGTID():
-			logger.Debugf("parseEvents pos: %v binlog event is a GTID event: %v", pos, ev)
+			logger.Debugf("parseEvents pos: %+v binlog event is a GTID event: %+v", pos, ev)
 
 		case ev.IsRand():
 			//todo deal with the Rand error
-			return pos, fmt.Errorf("binlog event is a Rand event: %#v", ev)
+			return pos, fmt.Errorf("binlog event is a Rand event: %+v", ev)
 		case ev.IsIntVar():
 			//todo deal with the IntVar error
-			return pos, fmt.Errorf("binlog event is a IntVar event: %#v", ev)
+			return pos, fmt.Errorf("binlog event is a IntVar event: %+v", ev)
 		case ev.IsRowsQuery():
 			//todo deal with the RowsQuery error
-			return pos, fmt.Errorf("binlog event is a RowsQuery event: %#v", ev)
+			return pos, fmt.Errorf("binlog event is a RowsQuery event: %+v", ev)
 		}
 
 	}
