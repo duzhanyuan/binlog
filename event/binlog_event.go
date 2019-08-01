@@ -22,30 +22,6 @@ type Charset struct {
 	Server int32
 }
 
-func (m *Charset) Reset()      { *m = Charset{} }
-func (*Charset) ProtoMessage() {}
-
-func (m *Charset) GetClient() int32 {
-	if m != nil {
-		return m.Client
-	}
-	return 0
-}
-
-func (m *Charset) GetConn() int32 {
-	if m != nil {
-		return m.Conn
-	}
-	return 0
-}
-
-func (m *Charset) GetServer() int32 {
-	if m != nil {
-		return m.Server
-	}
-	return 0
-}
-
 func (m *Charset) String() string {
 	return fmt.Sprintf("client:%d conn:%d server:%d", m.Client, m.Conn, m.Server)
 }

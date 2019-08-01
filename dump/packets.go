@@ -11,6 +11,20 @@ import (
 	"time"
 )
 
+func (mc *MysqlConn) setReadTimeout() error {
+	if mc.readTimeout > 0 {
+		return mc.netConn.SetReadDeadline(time.Now().Add(mc.readTimeout))
+	}
+	return nil
+}
+
+func (mc *MysqlConn) cleanReadTimeout() error {
+	if mc.readTimeout > 0 {
+		return mc.netConn.SetReadDeadline(time.Time{})
+	}
+	return nil
+}
+
 // Packets documentation:
 // http://dev.mysql.com/doc/internals/en/client-server-protocol.html
 
@@ -20,12 +34,19 @@ func (mc *MysqlConn) readPacket() ([]byte, error) {
 	var header [4]byte
 	for {
 		// read packet header
+		if err := mc.setReadTimeout(); err != nil {
+			return nil, err
+		}
+
 		if _, err := io.ReadFull(mc.reader, header[:]); err != nil {
 			errLog.Print(fmt.Errorf("io.ReadFull(header size) failed: %v", err))
 			mc.Close()
 			return nil, ErrBadConn
 		}
 
+		if err := mc.cleanReadTimeout(); err != nil {
+			return nil, err
+		}
 		// packet length [24 bit]
 		pktLen := int(uint32(header[0]) | uint32(header[1])<<8 | uint32(header[2])<<16)
 
@@ -52,6 +73,10 @@ func (mc *MysqlConn) readPacket() ([]byte, error) {
 		}
 
 		// read packet body [pktLen bytes]
+		if err := mc.setReadTimeout(); err != nil {
+			return nil, err
+		}
+
 		data := make([]byte, pktLen)
 		if _, err := io.ReadFull(mc.reader, data); err != nil {
 			errLog.Print("io.ReadFull(packet body of length %v) failed: %v", pktLen, err)
@@ -59,6 +84,9 @@ func (mc *MysqlConn) readPacket() ([]byte, error) {
 			return nil, ErrBadConn
 		}
 
+		if err := mc.cleanReadTimeout(); err != nil {
+			return nil, err
+		}
 		// return data if this was the last packet
 		if pktLen < maxPacketSize {
 			// zero allocations for non-split packets

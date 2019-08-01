@@ -20,7 +20,6 @@ const defaultBufSize = 4096
 
 //mysql连接，用于执行dump和其他命令
 type MysqlConn struct {
-	//buf              buffer
 	reader           *bufio.Reader
 	netConn          net.Conn
 	affectedRows     uint64
@@ -28,12 +27,14 @@ type MysqlConn struct {
 	cfg              *Config
 	maxAllowedPacket int
 	maxWriteSize     int
-	writeTimeout     time.Duration
-	flags            clientFlag
-	status           statusFlag
-	sequence         uint8
-	parseTime        bool
-	strict           bool
+
+	readTimeout  time.Duration
+	writeTimeout time.Duration
+	flags        clientFlag
+	status       statusFlag
+	sequence     uint8
+	parseTime    bool
+	strict       bool
 }
 
 func NewMysqlConn(dsn string) (*MysqlConn, error) {
@@ -68,10 +69,9 @@ func NewMysqlConn(dsn string) (*MysqlConn, error) {
 		}
 	}
 	mc.reader = bufio.NewReaderSize(mc.netConn, defaultBufSize)
-	//mc.buf = newBuffer(mc.netConn)
 
 	// Set I/O timeouts
-	//mc.buf.timeout = mc.cfg.ReadTimeout
+	mc.readTimeout = mc.cfg.ReadTimeout
 	mc.writeTimeout = mc.cfg.WriteTimeout
 
 	// Reading Handshake Initialization Packet
