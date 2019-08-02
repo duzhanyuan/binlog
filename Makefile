@@ -1,8 +1,9 @@
 export GO15VENDOREXPERIMENT=1
 
 PKGS ?=
+All_PKG_FILES ?=*.go dump event meta
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?=*.go dump event meta
+PKG_FILES ?=+= $(filter-out example_test.go $(All_PKG_FILES))
 COVERALLS_TOKEN=WrkOJBvlULyqJtq7IeT5c8FcST2mkEy0q
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -21,6 +22,12 @@ all: lint test ci
 dependencies:
 	@echo "Installing test dependencies..."
 	go get github.com/mattn/goveralls
+ifdef SHOULD_LINT
+	@echo "Installing golint..."
+	go get github.com/lint/golint
+else
+	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
+endif
 
 # Disable printf-like invocation checking due to testify.assert.Error()
 VET_RULES := -printf=false
@@ -46,7 +53,7 @@ endif
 
 .PHONY: test
 test:
-	go test $(PKGS)
+	@go test -v  ./...
 
 .PHONY: ci
 ci:
