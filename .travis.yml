@@ -4,5 +4,9 @@ go:
   - 1.10.x
   - 1.11.x
   - 1.12.x
+install:
+  - make dependencies
 script:
   - make test
+after_success:
+  - make ci

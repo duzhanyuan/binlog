@@ -21,12 +21,6 @@ all: lint test ci
 dependencies:
 	@echo "Installing test dependencies..."
 	go get github.com/mattn/goveralls
-ifdef SHOULD_LINT
-	@echo "Installing golint..."
-	go get github.com/lint/golint
-else
-	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
-endif
 
 # Disable printf-like invocation checking due to testify.assert.Error()
 VET_RULES := -printf=false
