@@ -9,4 +9,5 @@ install:
 script:
   - make test
 after_success:
-  - make ci
+  - make cover
+  - bash <(curl -s https://codecov.io/bash)
