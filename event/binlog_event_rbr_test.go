@@ -426,7 +426,7 @@ func TestCellLengthAndData(t *testing.T) {
 
 		// Test CellBytes.
 		out, l, err := CellBytes(padded, 1, c.typ, c.metadata, c.isUnSignedInt)
-		if err != nil || l != len(c.data) || bytes.Compare(out, c.out) != 0 {
+		if err != nil || l != len(c.data) || !bytes.Equal(out, c.out) {
 			t.Errorf("tesc cellData(%v,%v) returned unexpected result: %v %v %v, was expecting %v %v <nil>", c.typ, c.data, out, l, err, c.out, len(c.data))
 		}
 	}
