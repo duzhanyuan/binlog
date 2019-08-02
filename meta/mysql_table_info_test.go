@@ -7,10 +7,7 @@ func TestMysqlTableName_String(t *testing.T) {
 		input MysqlTableName
 		want  string
 	}{
-		struct {
-			input MysqlTableName
-			want  string
-		}{
+		{
 			input: NewMysqlTableName("db", "table"),
 			want:  "`db`.`table`",
 		},

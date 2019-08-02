@@ -22,14 +22,14 @@ var (
 			TableName: "vt_a",
 		},
 		Columns: []meta.MysqlColumnAttribute{
-			meta.MysqlColumnAttribute{
+			{
 				Field: "id",
 				Type:  "int(11)",
 				Key:   meta.MysqlPrimaryKeyDescription,
 				Null:  "",
 				Extra: meta.MysqlAutoIncrementDescription,
 			},
-			meta.MysqlColumnAttribute{
+			{
 				Field: "message",
 				Type:  "varchar(256)",
 				Key:   "",
@@ -257,21 +257,21 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 			Offset:   4,
 		},
 		Events: []*meta.StreamEvent{
-			&meta.StreamEvent{
+			{
 				Type:      meta.StatementInsert,
 				Timestamp: 1407805592,
 				Table:     tesInfo.Name,
 				SQL:       "",
 				RowValues: []*meta.RowData{
-					&meta.RowData{
+					{
 						Columns: []*meta.ColumnData{
-							&meta.ColumnData{
+							{
 								Filed: "id",
 								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
-							&meta.ColumnData{
+							{
 								Filed: "message",
 								IsKey: false,
 								Data:  []byte("abcd"),
@@ -281,20 +281,20 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 					},
 				},
 			},
-			&meta.StreamEvent{
+			{
 				Type:      meta.StatementUpdate,
 				Table:     tesInfo.Name,
 				Timestamp: 1407805592,
 				RowIdentifies: []*meta.RowData{
-					&meta.RowData{
+					{
 						Columns: []*meta.ColumnData{
-							&meta.ColumnData{
+							{
 								Filed: "id",
 								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
-							&meta.ColumnData{
+							{
 								Filed: "message",
 								IsKey: false,
 								Data:  []byte("abc"),
@@ -304,15 +304,15 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 					},
 				},
 				RowValues: []*meta.RowData{
-					&meta.RowData{
+					{
 						Columns: []*meta.ColumnData{
-							&meta.ColumnData{
+							{
 								Filed: "id",
 								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
-							&meta.ColumnData{
+							{
 								Filed: "message",
 								IsKey: false,
 								Data:  []byte("abcd"),
@@ -322,20 +322,20 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 					},
 				},
 			},
-			&meta.StreamEvent{
+			{
 				Type:      meta.StatementDelete,
 				Timestamp: 1407805592,
 				Table:     tesInfo.Name,
 				RowIdentifies: []*meta.RowData{
-					&meta.RowData{
+					{
 						Columns: []*meta.ColumnData{
-							&meta.ColumnData{
+							{
 								Filed: "id",
 								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
-							&meta.ColumnData{
+							{
 								Filed: "message",
 								IsKey: false,
 								Data:  []byte("abc"),

@@ -34,9 +34,9 @@ func TestQueryStringNilCharset(t *testing.T) {
 
 func TestBinlogFormatIsZero(t *testing.T) {
 	table := map[*BinlogFormat]bool{
-		&BinlogFormat{}:                 true,
-		&BinlogFormat{FormatVersion: 1}: false,
-		&BinlogFormat{HeaderLength: 1}:  false,
+		{}:                 true,
+		{FormatVersion: 1}: false,
+		{HeaderLength: 1}:  false,
 	}
 	for input, want := range table {
 		if got := input.IsZero(); got != want {

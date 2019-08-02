@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 )
 
 type mockWriter struct {
-	buf *bytes.Buffer
+	mutex sync.Mutex
+	buf   *bytes.Buffer
 }
 
 func newMockWriter(buf *bytes.Buffer) *mockWriter {
@@ -30,29 +32,17 @@ func TestNewDefaultLogger(t *testing.T) {
 		format string
 		args   []interface{}
 	}{
-		struct {
-			printf func(string, ...interface{})
-			format string
-			args   []interface{}
-		}{
+		{
 			printf: logger.Debugf,
 			format: "debug %d",
 			args:   []interface{}{DebugLevel},
 		},
-		struct {
-			printf func(string, ...interface{})
-			format string
-			args   []interface{}
-		}{
+		{
 			printf: logger.Infof,
 			format: "info %d",
 			args:   []interface{}{InfoLevel},
 		},
-		struct {
-			printf func(string, ...interface{})
-			format string
-			args   []interface{}
-		}{
+		{
 			printf: logger.Errorf,
 			format: "error %d",
 			args:   []interface{}{ErrorLevel},
@@ -81,10 +71,7 @@ func TestDefaultLogger_Print(t *testing.T) {
 		print func(...interface{})
 		args  []interface{}
 	}{
-		struct {
-			print func(...interface{})
-			args  []interface{}
-		}{
+		{
 			print: logger.Print,
 			args:  []interface{}{DebugLevel},
 		},

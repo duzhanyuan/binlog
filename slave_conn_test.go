@@ -68,24 +68,15 @@ func Test_slaveConn_startDumpFromBinlogPosition(t *testing.T) {
 		input []byte
 		want  string
 	}{
-		struct {
-			input []byte
-			want  string
-		}{
+		{
 			input: []byte{dump.PacketOK, 's', 't', 'a', 'r', 't', '0'},
 			want:  "start0",
 		},
-		struct {
-			input []byte
-			want  string
-		}{
+		{
 			input: []byte{dump.PacketOK, 'x', 'x', 'x', '0'},
 			want:  "xxx0",
 		},
-		struct {
-			input []byte
-			want  string
-		}{
+		{
 			input: []byte{dump.PacketOK, 'e', 'n', 'd', '0'},
 			want:  "end0",
 		},
@@ -128,10 +119,7 @@ func Test_slaveConn_startDumpFromBinlogPosition_Error(t *testing.T) {
 		input []byte
 		want  string
 	}{
-		struct {
-			input []byte
-			want  string
-		}{
+		{
 			input: []byte{dump.PacketERR, 'm', 'i', 's', 's', '0'},
 			want:  "miss0",
 		},
@@ -169,10 +157,7 @@ func Test_slaveConn_startDumpFromBinlogPosition_EOF(t *testing.T) {
 		input []byte
 		want  string
 	}{
-		struct {
-			input []byte
-			want  string
-		}{
+		{
 			input: []byte{dump.PacketEOF, 'm', 'i', 's', 's', '0'},
 			want:  "received EOF packet",
 		},

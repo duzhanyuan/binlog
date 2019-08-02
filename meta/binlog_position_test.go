@@ -9,40 +9,28 @@ func TestBinlogPosition_IsZero(t *testing.T) {
 		input BinlogPosition
 		want  bool
 	}{
-		struct {
-			input BinlogPosition
-			want  bool
-		}{
+		{
 			input: BinlogPosition{
 				FileName: "",
 				Offset:   0,
 			},
 			want: true,
 		},
-		struct {
-			input BinlogPosition
-			want  bool
-		}{
+		{
 			input: BinlogPosition{
 				FileName: "",
 				Offset:   1,
 			},
 			want: true,
 		},
-		struct {
-			input BinlogPosition
-			want  bool
-		}{
+		{
 			input: BinlogPosition{
 				FileName: "xxx",
 				Offset:   0,
 			},
 			want: true,
 		},
-		struct {
-			input BinlogPosition
-			want  bool
-		}{
+		{
 			input: BinlogPosition{
 				FileName: "xxx",
 				Offset:   1,
