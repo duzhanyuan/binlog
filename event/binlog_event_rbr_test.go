@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestCellLengthAndData(t *testing.T) {
@@ -67,7 +68,8 @@ func TestCellLengthAndData(t *testing.T) {
 		// 0x58d137c5 = 1490106309 = 2017-03-21 14:25:09 utc
 		typ:  TypeTimestamp,
 		data: []byte{0xc5, 0x37, 0xd1, 0x58},
-		out:  []byte("2017-03-21 22:25:09"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 0, time.UTC).
+			Local().Format("2006-01-02 15:04:05")),
 	}, {
 		typ:           TypeLongLong,
 		data:          []byte{0x88, 0x87, 0x86, 0x85, 0x84, 0x83, 0x82, 0x81},
@@ -117,41 +119,48 @@ func TestCellLengthAndData(t *testing.T) {
 		typ:      TypeTimestamp2,
 		metadata: 0,
 		data:     []byte{0x58, 0xd1, 0x37, 0xc5},
-		out:      []byte("2017-03-21 22:25:09"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 0, time.UTC).
+			Local().Format("2006-01-02 15:04:05")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 1,
 		data:     []byte{0x58, 0xd1, 0x37, 0xc5, 70},
-		out:      []byte("2017-03-21 22:25:09.7"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 700000000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.9")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 2,
 		data:     []byte{0x58, 0xd1, 0x37, 0xc5, 76},
-		out:      []byte("2017-03-21 22:25:09.76"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 760000000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.99")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 3,
 		// 7650 = 0x1de2
 		data: []byte{0x58, 0xd1, 0x37, 0xc5, 0x1d, 0xe2},
-		out:  []byte("2017-03-21 22:25:09.765"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 765000000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.999")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 4,
 		// 7654 = 0x1de6
 		data: []byte{0x58, 0xd1, 0x37, 0xc5, 0x1d, 0xe6},
-		out:  []byte("2017-03-21 22:25:09.7654"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 765400000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.9999")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 5,
 		// 76540 = 0x0badf6
 		data: []byte{0x58, 0xd1, 0x37, 0xc5, 0x0b, 0xad, 0xf6},
-		out:  []byte("2017-03-21 22:25:09.76543"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 765430000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.99999")),
 	}, {
 		typ:      TypeTimestamp2,
 		metadata: 6,
 		// 765432 = 0x0badf8
 		data: []byte{0x58, 0xd1, 0x37, 0xc5, 0x0b, 0xad, 0xf8},
-		out:  []byte("2017-03-21 22:25:09.765432"),
+		out: []byte(time.Date(2017, time.March, 21, 14, 25, 9, 765432000, time.UTC).
+			Local().Format("2006-01-02 15:04:05.999999")),
 	}, {
 		typ:      TypeDateTime2,
 		metadata: 0,
@@ -427,7 +436,7 @@ func TestCellLengthAndData(t *testing.T) {
 		// Test CellBytes.
 		out, l, err := CellBytes(padded, 1, c.typ, c.metadata, c.isUnSignedInt)
 		if err != nil || l != len(c.data) || !bytes.Equal(out, c.out) {
-			t.Errorf("tesc cellData(%v,%v) returned unexpected result: %v %v %v, was expecting %v %v <nil>", c.typ, c.data, out, l, err, c.out, len(c.data))
+			t.Errorf("tesc cellData(%v,%v) returned unexpected result: %v %v %v, was expecting %v %v <nil>", c.typ, c.data, string(out), l, err, string(c.out), len(c.data))
 		}
 	}
 }

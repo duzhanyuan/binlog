@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	//_ "github.com/go-sql-driver/mysql"
+	//_ "github.com/go-sql-driver/mysql" you need it in you own project
 	"github.com/onlyac0611/binlog/meta"
 )
 
