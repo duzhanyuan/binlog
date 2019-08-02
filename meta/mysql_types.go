@@ -3,7 +3,7 @@ package meta
 import (
 	"strings"
 
-	"cmd/libra/binlog/event"
+	"github.com/onlyac0611/binlog/event"
 )
 
 //it means the sql statement type
