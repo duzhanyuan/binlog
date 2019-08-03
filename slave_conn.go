@@ -51,7 +51,7 @@ func (s *slaveConn) close() {
 		func() {
 			if s.dc != nil {
 				s.dc.Close()
-				logger.Infof("Close closing slave socket to unblock reads")
+				lw.logger().Infof("Close closing slave socket to unblock reads")
 			}
 		})
 }
@@ -68,7 +68,7 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	pos meta.BinlogPosition) (<-chan event.BinlogEvent, error) {
 	ctx, s.cancel = context.WithCancel(ctx)
 
-	logger.Infof("startDumpFromBinlogPosition sending binlog dump command: startPos: %+v slaveID: %v", pos, serverID)
+	lw.logger().Infof("startDumpFromBinlogPosition sending binlog dump command: startPos: %+v slaveID: %v", pos, serverID)
 	if err := s.dc.NoticeDump(serverID, uint32(pos.Offset), pos.FileName, 0); err != nil {
 		return nil, fmt.Errorf("noticeDump fail. err: %v", err)
 	}
@@ -87,24 +87,24 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 		for {
 			switch buf[0] {
 			case dump.PacketEOF:
-				logger.Infof("startDumpFromBinlogPosition received EOF packet in binlog dump: %+v", buf)
+				lw.logger().Infof("startDumpFromBinlogPosition received EOF packet in binlog dump: %+v", buf)
 				return
 			case dump.PacketERR:
 				err := s.dc.HandleErrorPacket(buf)
-				logger.Errorf("startDumpFromBinlogPosition received error packet in binlog dump. error: %v", err)
+				lw.logger().Errorf("startDumpFromBinlogPosition received error packet in binlog dump. error: %v", err)
 				return
 			}
 
 			select {
 			case eventChan <- event.NewMysql56BinlogEvent(buf[1:]):
 			case <-ctx.Done():
-				logger.Infof("startDumpFromBinlogPosition stop by ctx. reason: %v", ctx.Err())
+				lw.logger().Infof("startDumpFromBinlogPosition stop by ctx. reason: %v", ctx.Err())
 				return
 			}
 
 			buf, err = s.dc.ReadPacket()
 			if err != nil {
-				logger.Errorf("startDumpFromBinlogPosition ReadPacket fail. error: %v", err)
+				lw.logger().Errorf("startDumpFromBinlogPosition ReadPacket fail. error: %v", err)
 				return
 			}
 		}

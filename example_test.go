@@ -124,17 +124,17 @@ func (e *ExampleTableInfoMapper) GetBinlogFormat() (format meta.BinlogFormatType
 
 func showTransaction(t *meta.Transaction) {
 	for _, vi := range t.Events {
-		logger.Print("nextPos:", t.NextPosition)
+		lw.logger().Print("nextPos:", t.NextPosition)
 		for _, vj := range vi.RowIdentifies {
-			logger.Print("type:", vi.Type.String(), "table:", vi.Table.String())
+			lw.logger().Print("type:", vi.Type.String(), "table:", vi.Table.String())
 			for _, vk := range vj.Columns {
-				logger.Print("data：", string(vk.Data))
+				lw.logger().Print("data：", string(vk.Data))
 			}
 		}
 		for _, vj := range vi.RowValues {
-			logger.Print("type:", vi.Type.String(), "table:", vi.Table.String())
+			lw.logger().Print("type:", vi.Type.String(), "table:", vi.Table.String())
 			for _, vk := range vj.Columns {
-				logger.Print("data：", string(vk.Data))
+				lw.logger().Print("data：", string(vk.Data))
 			}
 		}
 	}
@@ -145,7 +145,7 @@ func ExampleRowStreamer_Stream() {
 	dsn := "user:password@tcp(ip:3306)/mysql?charset=utf8mb4"
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		logger.Errorf("open fail. err: %v", err)
+		lw.logger().Errorf("open fail. err: %v", err)
 		return
 	}
 	defer db.Close()
@@ -156,24 +156,24 @@ func ExampleRowStreamer_Stream() {
 	e := &ExampleTableInfoMapper{db: db}
 	format, err := e.GetBinlogFormat()
 	if err != nil {
-		logger.Errorf("getBinlogFormat fail. err: %v", err)
+		lw.logger().Errorf("getBinlogFormat fail. err: %v", err)
 		return
 	}
 
 	if !format.IsRow() {
-		logger.Errorf("format is not row. format: %v", format)
+		lw.logger().Errorf("format is not row. format: %v", format)
 		return
 	}
 
 	pos, err := e.GetBinlogPosition()
 	if err != nil {
-		logger.Errorf("getBinlogPosition fail. err: %v", err)
+		lw.logger().Errorf("getBinlogPosition fail. err: %v", err)
 		return
 	}
 
 	r, err := NewRowStreamer(dsn, 1234, e)
 	if err != nil {
-		logger.Errorf("NewRowStreamer fail. err: %v", err)
+		lw.logger().Errorf("NewRowStreamer fail. err: %v", err)
 		return
 	}
 	r.SetStartBinlogPosition(pos)

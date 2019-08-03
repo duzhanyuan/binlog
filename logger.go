@@ -80,14 +80,28 @@ func (d *defaultLogger) Print(args ...interface{}) {
 }
 
 var (
-	mutex  sync.Mutex
-	logger = newNilLogger()
+	lw = loggerWrapper{l: newNilLogger()}
 )
 
+type loggerWrapper struct {
+	l  Logger
+	mu sync.RWMutex
+}
+
+func (l *loggerWrapper) setLogger(logger Logger) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.l = logger
+}
+
+func (l *loggerWrapper) logger() Logger {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.l
+}
+
 //SetLogger 设置一个符合Logger日志来打印binlog包的调试信息
-func SetLogger(other Logger) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	logger = other
-	dump.SetLogger(other)
+func SetLogger(logger Logger) {
+	lw.setLogger(logger)
+	dump.SetLogger(logger)
 }

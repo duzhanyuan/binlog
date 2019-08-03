@@ -95,7 +95,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 	begin := func() {
 		if tranEvents != nil {
 			// If this happened, it would be a legitimate error.
-			logger.Errorf("parseEvents BEGIN in binlog stream while still in another transaction; dropping %d transactionEvents: %+v", len(tranEvents), tranEvents)
+			lw.logger().Errorf("parseEvents BEGIN in binlog stream while still in another transaction; dropping %d transactionEvents: %+v", len(tranEvents), tranEvents)
 		}
 		tranEvents = make([]*meta.StreamEvent, 0, 10)
 		autocommit = false
@@ -120,11 +120,11 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 		select {
 		case ev, ok = <-events:
 			if !ok {
-				logger.Infof("parseEvents reached end of binlog event stream")
+				lw.logger().Infof("parseEvents reached end of binlog event stream")
 				return pos, ErrStreamEOF
 			}
 		case <-ctx.Done():
-			logger.Infof("parseEvents stopping early due to binlog Streamer service shutdown or client disconnect")
+			lw.logger().Infof("parseEvents stopping early due to binlog Streamer service shutdown or client disconnect")
 			return pos, ctx.Err()
 		}
 
@@ -134,14 +134,14 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 		}
 
 		// We need to keep checking for FORMAT_DESCRIPTION_EVENT even after we've
-		// seen one, because another one might come along (e.g. on logger rotate due to
+		// seen one, because another one might come along (e.g. on lw.logger() rotate due to
 		// binlog settings change) that changes the format.
 		if ev.IsFormatDescription() {
 			format, err = ev.Format()
 			if err != nil {
 				return pos, fmt.Errorf("parseEvents can't parse FORMAT_DESCRIPTION_EVENT: %v, event data: %+v", err, ev)
 			}
-			logger.Debugf("parseEvents pos: %+v binlog event is a format description event:%+v", ev.NextPosition(), format)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a format description event:%+v", ev.NextPosition(), format)
 			continue
 		}
 
@@ -150,7 +150,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 		if format.IsZero() {
 			// The only thing that should come before the FORMAT_DESCRIPTION_EVENT
 			// is a fake ROTATE_EVENT, which the master sends to tell us the name
-			// of the current logger file.
+			// of the current lw.logger() file.
 			if ev.IsRotate() {
 				continue
 			}
@@ -165,13 +165,13 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 
 		switch {
 		case ev.IsXID(): // XID_EVENT (equivalent to COMMIT)
-			logger.Debugf("parseEvents pos: %+v binlog event is a xid event:", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event:", pos, ev)
 			if err = commit(ev); err != nil {
 				return pos, err
 			}
 
 		case ev.IsRotate():
-			logger.Debugf("parseEvents pos: %+v binlog event is a xid event %+v:", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event %+v:", pos, ev)
 			var filename string
 			var offset int64
 			if filename, offset, err = ev.Rotate(format); err != nil {
@@ -186,7 +186,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			}
 			typ := meta.GetStatementCategory(q.SQL)
 
-			logger.Debugf("parseEvents pos: %+v binlog event is a query event: %+v query: %v", pos, ev, q.SQL)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a query event: %+v query: %v", pos, ev, q.SQL)
 
 			switch typ {
 			case meta.StatementBegin:
@@ -199,7 +199,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 					return pos, err
 				}
 			default:
-				logger.Errorf("parseEvents we have a sql in binlog position: %+v error: %v", pos,
+				lw.logger().Errorf("parseEvents we have a sql in binlog position: %+v error: %v", pos,
 					fmt.Errorf("parseEvents SQL query %s  statement in row binlog SQL: %s", typ.String(), q.SQL))
 				//return pos, fmt.Errorf("parseEvents SQL query %s  statement in row binlog SQL: %s", typ.String(), q.SQL)
 			}
@@ -211,7 +211,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if err != nil {
 				return pos, err
 			}
-			logger.Debugf("parseEvents pos: %+v binlog event is a table map event, tableID: %v table map: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a table map event, tableID: %v table map: %+v",
 				pos, tableID, *tm)
 
 			if _, ok = tablesMaps[tableID]; ok {
@@ -245,13 +245,13 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if !ok {
 				return pos, fmt.Errorf("parseEvents unknown tableID %v in WriteRows event", tableID)
 			}
-			logger.Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v tc.tableMap: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v tc.tableMap: %+v",
 				pos, tableID, tc.tableMap)
 			rows, err := ev.Rows(format, tc.tableMap)
 			if err != nil {
 				return pos, err
 			}
-			logger.Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v rows: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a write rows event, tableID: %v rows: %+v",
 				pos, tableID, rows)
 
 			tranEvent, err := appendInsertEventFromRows(tc, &rows, int64(ev.Timestamp()))
@@ -272,14 +272,14 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if !ok {
 				return pos, fmt.Errorf("parseEvents unknown tableID %v in UpdateRows event", tableID)
 			}
-			logger.Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v tc.tableMap: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v tc.tableMap: %+v",
 				pos, tableID, tc.tableMap)
 			rows, err := ev.Rows(format, tc.tableMap)
 			if err != nil {
 				return pos, err
 			}
 
-			logger.Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v rows: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a update rows event, tableID: %v rows: %+v",
 				pos, tableID, rows)
 
 			tranEvent, err := appendUpdateEventFromRows(tc, &rows, int64(ev.Timestamp()))
@@ -299,7 +299,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 				return pos, fmt.Errorf("parseEvents unknown tableID %v in DeleteRows event", tableID)
 			}
 
-			logger.Debugf("parseEvents pos: %+v binlog event is a delete rows event, tableID: %v tc.tableMap: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a delete rows event, tableID: %v tc.tableMap: %+v",
 				pos, tableID, tc.tableMap)
 
 			rows, err := ev.Rows(format, tc.tableMap)
@@ -307,7 +307,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 				return pos, err
 			}
 
-			logger.Debugf("parseEvents pos: %+v", "binlog event is a delete rows event, tableID: %v rows: %+v",
+			lw.logger().Debugf("parseEvents pos: %+v", "binlog event is a delete rows event, tableID: %v rows: %+v",
 				pos, tableID, rows)
 			tranEvent, err := appendDeleteEventFromRows(tc, &rows, int64(ev.Timestamp()))
 			if err != nil {
@@ -321,9 +321,9 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 				}
 			}
 		case ev.IsPreviousGTIDs():
-			logger.Debugf("parseEvents pos: %+v binlog event is a PreviousGTIDs event: %+v", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a PreviousGTIDs event: %+v", pos, ev)
 		case ev.IsGTID():
-			logger.Debugf("parseEvents pos: %+v binlog event is a GTID event: %+v", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a GTID event: %+v", pos, ev)
 
 		case ev.IsRand():
 			//todo deal with the Rand error

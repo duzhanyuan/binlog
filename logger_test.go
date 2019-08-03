@@ -35,17 +35,17 @@ func TestNewDefaultLogger(t *testing.T) {
 		args   []interface{}
 	}{
 		{
-			printf: logger.Debugf,
+			printf: lw.logger().Debugf,
 			format: "debug %d",
 			args:   []interface{}{DebugLevel},
 		},
 		{
-			printf: logger.Infof,
+			printf: lw.logger().Infof,
 			format: "info %d",
 			args:   []interface{}{InfoLevel},
 		},
 		{
-			printf: logger.Errorf,
+			printf: lw.logger().Errorf,
 			format: "error %d",
 			args:   []interface{}{ErrorLevel},
 		},
@@ -74,7 +74,7 @@ func TestDefaultLogger_Print(t *testing.T) {
 		args  []interface{}
 	}{
 		{
-			print: logger.Print,
+			print: lw.logger().Print,
 			args:  []interface{}{DebugLevel},
 		},
 	}
