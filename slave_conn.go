@@ -18,7 +18,7 @@ type dumpConn interface {
 	HandleErrorPacket([]byte) error
 }
 
-// slaveConn modify based on github.com/youtube/vitess/go/vt/mysqlctl/slave_connection.go
+// slaveConn 从github.com/youtube/vitess/go/vt/mysqlctl/slave_connection.go的基础上移植过来
 // slaveConn通过StartDumpFromBinlogPosition和mysql库进行binlog dump，将自己伪装成slave，
 // 先执行SET @master_binlog_checksum=@@global.binlog_checksum，然后发送 binlog dump包，
 // 最后获取binlog日志，通过chan将binlog日志通过binlog event的格式传出。

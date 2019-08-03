@@ -15,7 +15,7 @@ SHOULD_LINT := true
 endif
 
 .PHONY: all
-all: lint test ci
+all: lint test
 
 .PHONY: dependencies
 dependencies:
@@ -56,8 +56,3 @@ test:
 .PHONY: cover
 cover:
 	./scripts/cover.sh $(PKGS)
-
-.PHONY: ci
-ci:
-	@go test -v  ./... -covermode=count -coverprofile=coverage.out
-	@goveralls -coverprofile=coverage.out -service=travis-ci -repotoken ${COVERALLS_TOKEN}

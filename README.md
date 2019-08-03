@@ -16,13 +16,29 @@ binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库�
 + 事务数据提供变更的列名，列数据类型，bytes类型的数据
 
 ## Usage
-### Steps
-+ 1.检查mysql的binlog格式是否是row模式，并且获取一个正确的binlog位置（以文件名和位移量作定义）
-+ 2.实现MysqlTableMapper接口，该接口是用于获取表信息的，主要是获取列名和一些其他信息，列属性和表信息也要实现
-+ 3.生成一个RowStreamer，设置一个正确的binlog位置并使用Stream接受数据，具体可以使用sendTransaction进行具体的行为定义
+### Prepare
++ 对于自建MySQL，需要先开启Binlog写入功能，配置binlog-format为ROW 模式，my.cnf中配置如下
+```
+[mysqld]
+log-bin=mysql-bin # 开启 binlog
+binlog-format=ROW # 选择 ROW 模式
+server_id=1 # 配置 MySQL replaction 需要定义，不要和 canal 的 slaveId 重复
+```
++ 授权examle链接MySQL账号具有作为MySQL slave的权限，如果已有账户可直接grant
+```sql
+CREATE USER example IDENTIFIED BY 'example';                                    #创建用户example
+GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'example'@'%';    #授予SELECT,REPLICATION权限
+FLUSH PRIVILEGES;                                                               #刷新权限
+```
+
+### Coding
++ 检查mysql的binlog格式是否是row模式，并且获取一个正确的binlog位置（以文件名和位移量作定义）
++ 实现MysqlTableMapper接口，该接口是用于获取表信息的，主要是获取列属性
++ 表meta.MysqlTable和列meta.MysqlColumn需要实现，用于MysqlTableMapper接口
++ 生成一个RowStreamer，设置一个正确的binlog位置并使用Stream接受数据，具体可以使用sendTransaction进行具体的行为定义
 
 ### Example
-参考example_test.go,如果你期望调试dump协议交互以及binlog解析的过程，那么使用SetLogger函数将数据以你期望的方式打印调试信息
+参考example_test.go,如果你期望调试dump协议交互以及binlog解析的过程，那么使用SetLogger函数将数据以你期望的方式打印日志信息
 
 ## Modular
 ### event

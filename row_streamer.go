@@ -22,7 +22,7 @@ type MysqlTableMapper interface {
 	MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error)
 }
 
-//RowStreamer modify based on github.com/youtube/vitess/go/vt/binlog/binlog_streamer.go
+//RowStreamer 从github.com/youtube/vitess/go/vt/binlog/binlog_streamer.go的基础上移植过来
 //专门用来RowStreamer解析row模式的binlog event，将其变为对应的事务
 type RowStreamer struct {
 	dsn             string

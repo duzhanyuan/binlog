@@ -18,7 +18,7 @@ type Logger interface {
 	Print(args ...interface{})     //打印dump包的错误日志
 }
 
-// LogLevel 日志级别, 为调试/信息/错误
+//LogLevel 日志级别, 为调试/信息/错误
 type LogLevel uint8
 
 //日志级别
@@ -29,7 +29,6 @@ const (
 )
 
 type defaultLogger struct {
-	mu     sync.Mutex
 	level  LogLevel
 	logger *log.Logger
 }
@@ -52,25 +51,19 @@ func NewDefaultLogger(writer io.Writer, level LogLevel) Logger {
 }
 
 func (d *defaultLogger) Errorf(format string, args ...interface{}) {
-	d.mu.Lock()
 	if d.level <= ErrorLevel {
-		d.mu.Unlock()
 		d.logger.Output(2, fmt.Sprintf(format, args...))
 	}
 }
 
 func (d *defaultLogger) Infof(format string, args ...interface{}) {
-	d.mu.Lock()
 	if d.level <= InfoLevel {
-		d.mu.Unlock()
 		d.logger.Output(2, fmt.Sprintf(format, args...))
 	}
 }
 
 func (d *defaultLogger) Debugf(format string, args ...interface{}) {
-	d.mu.Lock()
 	if d.level <= DebugLevel {
-		d.mu.Unlock()
 		d.logger.Output(2, fmt.Sprintf(format, args...))
 	}
 }
