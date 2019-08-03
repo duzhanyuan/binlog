@@ -21,9 +21,12 @@ all: lint test ci
 dependencies:
 	@echo "Installing test dependencies..."
 	go get github.com/mattn/goveralls
-
-# Disable printf-like invocation checking due to testify.assert.Error()
-VET_RULES := -printf=false
+ifdef SHOULD_LINT
+	@echo "Installing golint..."
+	go get -u golang.org/x/lint/golint
+else
+	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
+endif
 
 .PHONY: lint
 lint:
@@ -37,9 +40,11 @@ ifdef SHOULD_LINT
 	@go vet $(VET_RULES) $(PKGS) 2>&1 | tee -a lint.log
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
-	@echo "Checking for unresolved FIXMEs..."
-	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
-	@echo "Checking for license headers..."
+#	@echo "Checking for unresolved FIXMEs..."
+#	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
+#	@echo "Checking for license headers..."
+#	@./check_license.sh | tee -a lint.log
+	@[ ! -s lint.log ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)
 endif
