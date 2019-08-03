@@ -79,10 +79,15 @@ func (d *defaultLogger) Print(args ...interface{}) {
 	d.logger.Output(2, fmt.Sprint(args...))
 }
 
-var logger = newNilLogger()
+var (
+	mutex  sync.Mutex
+	logger = newNilLogger()
+)
 
 //SetLogger 设置一个符合Logger日志来打印binlog包的调试信息
 func SetLogger(other Logger) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	logger = other
 	dump.SetLogger(other)
 }

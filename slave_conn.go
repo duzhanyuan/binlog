@@ -82,10 +82,7 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	eventChan := make(chan event.BinlogEvent)
 
 	go func() {
-		defer func() {
-			logger.Infof("startDumpFromBinlogPosition close slave dump thread to end")
-			close(eventChan)
-		}()
+		defer close(eventChan)
 
 		for {
 			switch buf[0] {

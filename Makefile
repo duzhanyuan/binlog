@@ -46,7 +46,7 @@ endif
 
 .PHONY: test
 test:
-	@go test -race -v  ./...
+	@go test -race  ./...
 
 .PHONY: cover
 cover:
