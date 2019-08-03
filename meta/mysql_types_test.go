@@ -253,49 +253,6 @@ func TestColumnType_IsDecimal(t *testing.T) {
 	}
 }
 
-func TestColumnType_IsNumeric(t *testing.T) {
-	testCases := map[ColumnType]bool{
-		ColumnTypeDecimal:    true,
-		ColumnTypeTiny:       true,
-		ColumnTypeShort:      true,
-		ColumnTypeLong:       true,
-		ColumnTypeFloat:      true,
-		ColumnTypeDouble:     true,
-		ColumnTypeNull:       false,
-		ColumnTypeTimestamp:  false,
-		ColumnTypeLongLong:   true,
-		ColumnTypeInt24:      true,
-		ColumnTypeDate:       false,
-		ColumnTypeTime:       false,
-		ColumnTypeDateTime:   false,
-		ColumnTypeYear:       false,
-		ColumnTypeNewDate:    false,
-		ColumnTypeVarchar:    false,
-		ColumnTypeBit:        false,
-		ColumnTypeTimestamp2: false,
-		ColumnTypeDateTime2:  false,
-		ColumnTypeTime2:      false,
-		ColumnTypeJSON:       false,
-		ColumnTypeNewDecimal: true,
-		ColumnTypeEnum:       false,
-		ColumnTypeSet:        false,
-		ColumnTypeTinyBlob:   false,
-		ColumnTypeMediumBlob: false,
-		ColumnTypeLongBlob:   false,
-		ColumnTypeBlob:       false,
-		ColumnTypeVarString:  false,
-		ColumnTypeString:     false,
-		ColumnTypeGeometry:   false,
-		ColumnType(128):      false,
-	}
-	for input, want := range testCases {
-		out := input.IsNumeric()
-		if want != out {
-			t.Fatalf("want != out input: %v, want: %v out: %v", input, want, out)
-		}
-	}
-}
-
 func TestColumnType_IsString(t *testing.T) {
 	testCases := map[ColumnType]bool{
 		ColumnTypeDecimal:    false,
@@ -642,9 +599,9 @@ func TestColumnType_IsGeometry(t *testing.T) {
 
 func TestFormatType_IsRow(t *testing.T) {
 	testCases := map[BinlogFormatType]bool{
-		BinlogFormatType("ROW"):       true,
-		BinlogFormatType("MIXED"):     false,
-		BinlogFormatType("STATEMENT"): false,
+		BinlogFormatType(BinlogFormatTypeRow):       true,
+		BinlogFormatType(BinlogFormatTypeMixed):     false,
+		BinlogFormatType(BinlogFormatTypeStatement): false,
 	}
 	for input, want := range testCases {
 		out := input.IsRow()

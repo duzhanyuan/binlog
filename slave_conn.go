@@ -83,8 +83,8 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 
 	go func() {
 		defer func() {
-			close(eventChan)
 			logger.Infof("startDumpFromBinlogPosition close slave dump thread to end")
+			close(eventChan)
 		}()
 
 		for {

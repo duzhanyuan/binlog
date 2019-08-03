@@ -1,4 +1,4 @@
-//package event用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
+//Package event 用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
 // 完全支持mysql 5.6.x的所有数据格式解析，
 // 支持5.7.x的绝大多数数据格式解析，仅仅不支持JSON数据。
 //
@@ -13,6 +13,7 @@ import (
 	"fmt"
 )
 
+//Charset 字符集（客户端，连接，服务器）
 type Charset struct {
 	// @@session.character_set_client
 	Client int32

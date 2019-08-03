@@ -16,10 +16,11 @@ const (
 	iERR         byte = 0xff
 )
 
+// mysql反馈包类型
 const (
-	PacketOK  = iOK
-	PacketEOF = iEOF
-	PacketERR = iERR
+	PacketOK  = iOK  //用于标识mysql反馈包是正确信息
+	PacketEOF = iEOF //用于标识mysql反馈包是结束信息
+	PacketERR = iERR //用于标识mysql反馈包是错误信息
 )
 
 // https://dev.mysql.com/doc/internals/en/capability-flags.html#packet-Protocol::CapabilityFlags

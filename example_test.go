@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	//_ "github.com/go-sql-driver/mysql" you need it in you own project
 	"github.com/onlyac0611/binlog/meta"
@@ -14,39 +15,77 @@ import (
 
 var ErrResultEmptyRow = errors.New("query results has no rows")
 
+const (
+	mysqlPrimaryKeyDescription    = "PRI"            //主键
+	mysqlAutoIncrementDescription = "auto_increment" //自增
+	mysqlUnsigned                 = "unsigned"
+)
+
+//列属性
+type mysqlColumnAttribute struct {
+	field         string //列名
+	typ           string //列类型
+	null          string //是否为空
+	key           string //PRI代表主键，UNI代表唯一索引
+	columnDefault []byte //默认值
+	extra         string //其他备注信息
+}
+
+func (m *mysqlColumnAttribute) Field() string {
+	return m.field
+}
+
+func (m *mysqlColumnAttribute) IsUnSignedInt() bool {
+	return strings.Contains(m.typ, mysqlUnsigned)
+}
+
+type mysqlTableInfo struct {
+	name    meta.MysqlTableName
+	columns []meta.MysqlColumn
+}
+
+func (m *mysqlTableInfo) Name() meta.MysqlTableName {
+	return m.name
+}
+
+func (m *mysqlTableInfo) Columns() []meta.MysqlColumn {
+	return m.columns
+}
+
 type ExampleTableInfoMapper struct {
 	db *sql.DB
 }
 
-func (e *ExampleTableInfoMapper) GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, error) {
-	sql := "desc " + name.String()
-	rows, err := e.db.Query(sql)
+func (e *ExampleTableInfoMapper) MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error) {
+	info := &mysqlTableInfo{
+		name:    name,
+		columns: make([]meta.MysqlColumn, 0, 10),
+	}
+
+	query := "desc " + name.String()
+	rows, err := e.db.Query(query)
 	if err != nil {
-		return meta.MysqlTableInfo{}, fmt.Errorf("query failed sql: %s, error: %v", sql, err)
+		return info, fmt.Errorf("query failed query: %s, error: %v", query, err)
 	}
 	defer rows.Close()
 
-	info := meta.MysqlTableInfo{
-		Name:    name,
-		Columns: make([]meta.MysqlColumnAttribute, 0, 10),
-	}
 	for i := 0; rows.Next(); i++ {
-		column := meta.MysqlColumnAttribute{}
-		err = rows.Scan(&column.Field, &column.Type, &column.Null, &column.Key, &column.Default, &column.Extra)
+		column := &mysqlColumnAttribute{}
+		err = rows.Scan(&column.field, &column.typ, &column.null, &column.key, &column.columnDefault, &column.extra)
 		if err != nil {
-			return meta.MysqlTableInfo{}, err
+			return info, err
 		}
-		info.Columns = append(info.Columns, column)
+		info.columns = append(info.columns, column)
 	}
 	return info, nil
 }
 
 func (e *ExampleTableInfoMapper) GetBinlogPosition() (pos meta.BinlogPosition, err error) {
 	var rows *sql.Rows
-	sql := "SHOW MASTER STATUS"
-	rows, err = e.db.Query(sql)
+	query := "SHOW MASTER STATUS"
+	rows, err = e.db.Query(query)
 	if err != nil {
-		err = fmt.Errorf("query fail. sql: %s, error: %v", sql, err)
+		err = fmt.Errorf("query fail. query: %s, error: %v", query, err)
 		return
 	}
 	defer rows.Close()
@@ -61,10 +100,10 @@ func (e *ExampleTableInfoMapper) GetBinlogPosition() (pos meta.BinlogPosition, e
 
 func (e *ExampleTableInfoMapper) GetBinlogFormat() (format meta.BinlogFormatType, err error) {
 	var rows *sql.Rows
-	sql := "SHOW VARIABLES LIKE 'binlog_format'"
-	rows, err = e.db.Query(sql)
+	query := "SHOW VARIABLES LIKE 'binlog_format'"
+	rows, err = e.db.Query(query)
 	if err != nil {
-		err = fmt.Errorf("query fail. sql: %s, error: %v", sql, err)
+		err = fmt.Errorf("query fail. query: %s, error: %v", query, err)
 		return
 	}
 	defer rows.Close()
@@ -74,7 +113,7 @@ func (e *ExampleTableInfoMapper) GetBinlogFormat() (format meta.BinlogFormatType
 		var str string
 		err = rows.Scan(&name, &str)
 		if err != nil {
-			err = fmt.Errorf("scan fail. sql: %s, error: %v", sql, err)
+			err = fmt.Errorf("scan fail. query: %s, error: %v", query, err)
 			return
 		}
 		format = meta.BinlogFormatType(str)

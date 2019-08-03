@@ -9,8 +9,8 @@ import (
 )
 
 type mockWriter struct {
-	mutex sync.Mutex
-	buf   *bytes.Buffer
+	mu  sync.Mutex
+	buf *bytes.Buffer
 }
 
 func newMockWriter(buf *bytes.Buffer) *mockWriter {
@@ -20,6 +20,8 @@ func newMockWriter(buf *bytes.Buffer) *mockWriter {
 }
 
 func (m *mockWriter) Write(p []byte) (n int, err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.buf.Write(p)
 }
 

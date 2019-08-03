@@ -15,26 +15,25 @@ var (
 		FileName: "binlog.000005",
 		Offset:   0,
 	}
-	tesInfo = meta.MysqlTableInfo{
-
-		Name: meta.MysqlTableName{
+	tesInfo = &mysqlTableInfo{
+		name: meta.MysqlTableName{
 			DbName:    "vt_test_keyspace",
 			TableName: "vt_a",
 		},
-		Columns: []meta.MysqlColumnAttribute{
-			{
-				Field: "id",
-				Type:  "int(11)",
-				Key:   meta.MysqlPrimaryKeyDescription,
-				Null:  "",
-				Extra: meta.MysqlAutoIncrementDescription,
+		columns: []meta.MysqlColumn{
+			&mysqlColumnAttribute{
+				field: "id",
+				typ:   "int(11)",
+				key:   mysqlPrimaryKeyDescription,
+				null:  "",
+				extra: mysqlAutoIncrementDescription,
 			},
-			{
-				Field: "message",
-				Type:  "varchar(256)",
-				Key:   "",
-				Null:  "",
-				Extra: "",
+			&mysqlColumnAttribute{
+				field: "message",
+				typ:   "varchar(256)",
+				key:   "",
+				null:  "",
+				extra: "",
 			},
 		},
 	}
@@ -52,7 +51,7 @@ func newMockMapper() *mockMapper {
 	return &mockMapper{}
 }
 
-func (m *mockMapper) GetTableInfo(name meta.MysqlTableName) (meta.MysqlTableInfo, error) {
+func (m *mockMapper) MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error) {
 	return tesInfo, nil
 }
 
@@ -182,7 +181,7 @@ func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
 		return fmt.Errorf("type is not equal. left: %v, right: %v", s.Type, right.Type)
 	}
 	if s.Table != right.Table {
-		return fmt.Errorf("TableName is not equal. left: %v, right: %v", s.Table, right.Table)
+		return fmt.Errorf("Name is not equal. left: %v, right: %v", s.Table, right.Table)
 	}
 	if s.Timestamp != right.Timestamp {
 		return fmt.Errorf("timestamp is not equal. left: %v, right: %v", s.Timestamp, right.Timestamp)
@@ -217,7 +216,7 @@ func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
 
 func checkRowDataEqual(r *meta.RowData, right *meta.RowData) error {
 	if len(r.Columns) != len(right.Columns) {
-		return fmt.Errorf("len of Columns is not match.left: %v right: %v", len(r.Columns), len(right.Columns))
+		return fmt.Errorf("len of columns is not match.left: %v right: %v", len(r.Columns), len(right.Columns))
 	}
 	for i := range r.Columns {
 		if err := checkColumnDataEqual(r.Columns[i], right.Columns[i]); err != nil {
@@ -260,20 +259,18 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 			{
 				Type:      meta.StatementInsert,
 				Timestamp: 1407805592,
-				Table:     tesInfo.Name,
+				Table:     tesInfo.name,
 				SQL:       "",
 				RowValues: []*meta.RowData{
 					{
 						Columns: []*meta.ColumnData{
 							{
 								Filed: "id",
-								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
 							{
 								Filed: "message",
-								IsKey: false,
 								Data:  []byte("abcd"),
 								Type:  meta.ColumnTypeVarchar,
 							},
@@ -283,20 +280,18 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 			},
 			{
 				Type:      meta.StatementUpdate,
-				Table:     tesInfo.Name,
+				Table:     tesInfo.name,
 				Timestamp: 1407805592,
 				RowIdentifies: []*meta.RowData{
 					{
 						Columns: []*meta.ColumnData{
 							{
 								Filed: "id",
-								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
 							{
 								Filed: "message",
-								IsKey: false,
 								Data:  []byte("abc"),
 								Type:  meta.ColumnTypeVarchar,
 							},
@@ -308,13 +303,11 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 						Columns: []*meta.ColumnData{
 							{
 								Filed: "id",
-								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
 							{
 								Filed: "message",
-								IsKey: false,
 								Data:  []byte("abcd"),
 								Type:  meta.ColumnTypeVarchar,
 							},
@@ -325,19 +318,17 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 			{
 				Type:      meta.StatementDelete,
 				Timestamp: 1407805592,
-				Table:     tesInfo.Name,
+				Table:     tesInfo.name,
 				RowIdentifies: []*meta.RowData{
 					{
 						Columns: []*meta.ColumnData{
 							{
 								Filed: "id",
-								IsKey: true,
 								Data:  []byte("1076895760"),
 								Type:  meta.ColumnTypeLong,
 							},
 							{
 								Filed: "message",
-								IsKey: false,
 								Data:  []byte("abc"),
 								Type:  meta.ColumnTypeVarchar,
 							},
@@ -392,7 +383,7 @@ func TestRowStreamer_SetStartBinlogPosition(t *testing.T) {
 		return
 	}
 	r.SetStartBinlogPosition(testBinlogPosParseEvents)
-	if r.startPos != testBinlogPosParseEvents {
+	if r.startBinlogPosition() != testBinlogPosParseEvents {
 		t.Fatalf("want != out, input:%+v want:%+v out %+v", testBinlogPosParseEvents, testBinlogPosParseEvents, r.startPos)
 	}
 }

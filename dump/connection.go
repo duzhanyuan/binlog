@@ -1,4 +1,4 @@
-// package dump 用于dump协议交互的，从github.com/go-sql-driver/mysql的基础上修改而来，主要功能如下：
+// Package dump 用于dump协议交互的，从github.com/go-sql-driver/mysql的基础上修改而来，主要功能如下：
 // 通过MysqlConn可以执行简单的sql命令，如set命令，
 // 通过MysqlConn来和mysql库进行binlog dump
 //
@@ -18,12 +18,12 @@ import (
 
 const defaultBufSize = 4096
 
-//mysql连接，用于执行dump和其他命令
+//MysqlConn mysql连接，用于执行dump和其他命令
 type MysqlConn struct {
 	reader           *bufio.Reader
 	netConn          net.Conn
 	affectedRows     uint64
-	insertId         uint64
+	insertID         uint64
 	cfg              *Config
 	maxAllowedPacket int
 	maxWriteSize     int
@@ -37,6 +37,7 @@ type MysqlConn struct {
 	strict       bool
 }
 
+//NewMysqlConn dsn是数据库连接信息
 func NewMysqlConn(dsn string) (*MysqlConn, error) {
 	var err error
 
@@ -151,6 +152,7 @@ func (mc *MysqlConn) handleParams() (err error) {
 	return
 }
 
+//Close 用于关闭连接和清理连接信息
 func (mc *MysqlConn) Close() (err error) {
 	// Makes Close idempotent
 	if mc.netConn != nil {
@@ -207,22 +209,22 @@ func (mc *MysqlConn) cleanup() {
 	mc.cfg = nil
 }
 
-// Internal function to execute commands
+//Exec Internal function to execute commands
 func (mc *MysqlConn) Exec(query string) error {
 	return mc.exec(query)
 }
 
-//通知开始从哪个binlog位置开始以serverID为编号开始同步数据
+//NoticeDump 通知开始从哪个binlog位置开始以serverID为编号开始同步数据
 func (mc *MysqlConn) NoticeDump(serverID, offset uint32, filename string, flags uint16) error {
 	return mc.writeDumpBinlogPosPacket(serverID, offset, filename, flags)
 }
 
-//读取mysql协议包
+//ReadPacket 读取mysql协议包
 func (mc *MysqlConn) ReadPacket() ([]byte, error) {
 	return mc.readPacket()
 }
 
-//处理mysql返回的错误
+//HandleErrorPacket 处理mysql返回的错误
 func (mc *MysqlConn) HandleErrorPacket(data []byte) error {
 	return mc.handleErrorPacket(data)
 }

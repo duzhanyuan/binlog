@@ -14,7 +14,6 @@ ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
 
-
 .PHONY: all
 all: lint test ci
 
@@ -47,7 +46,7 @@ endif
 
 .PHONY: test
 test:
-	@go test -v  ./...
+	@go test -race -v  ./...
 
 .PHONY: cover
 cover:

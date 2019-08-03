@@ -464,14 +464,13 @@ func (ev binlogEvent) Rows(f BinlogFormat, tm *TableMap) (Rows, error) {
 	return result, nil
 }
 
-/*
- * it is used to parse value of a column for a row as []byte to output
- * data      input the data form a row
- * pos       input where the data begin
- * typ       input the type of the column data
- * metadata  input it may contains the length or the precision of the column data
- * return []byte as value, int as the of length of value occupied in data
- */
+// CellBytes is used to parse value of a column for a row as []byte to output
+//	data          input the data form a row
+//	pos           input where the data begin
+//	typ           input the type of the column data
+//	metadata      input it may contains the length or the precision of the column data
+//	isUnSignedInt input it is unsigned int for this column
+//	return []byte as value, int as the of length of value occupied in data
 func CellBytes(data []byte, pos int, typ byte, metadata uint16, isUnSignedInt bool) ([]byte, int, error) {
 	switch typ {
 	case TypeTiny:
