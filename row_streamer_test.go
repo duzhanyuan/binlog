@@ -181,7 +181,7 @@ func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
 		return fmt.Errorf("type is not equal. left: %v, right: %v", s.Type, right.Type)
 	}
 	if s.Table != right.Table {
-		return fmt.Errorf("Name is not equal. left: %v, right: %v", s.Table, right.Table)
+		return fmt.Errorf("name is not equal. left: %v, right: %v", s.Table, right.Table)
 	}
 	if s.Timestamp != right.Timestamp {
 		return fmt.Errorf("timestamp is not equal. left: %v, right: %v", s.Timestamp, right.Timestamp)

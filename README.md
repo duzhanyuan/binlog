@@ -18,7 +18,7 @@ binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库�
 ## Usage
 ### Steps
 + 1.检查mysql的binlog格式是否是row模式，并且获取一个正确的binlog位置（以文件名和位移量作定义）
-+ 2.实现TableInfoMapper接口，该接口是用于获取表信息的，主要是获取列名和一些其他信息
++ 2.实现MysqlTableMapper接口，该接口是用于获取表信息的，主要是获取列名和一些其他信息，列属性和表信息也要实现
 + 3.生成一个RowStreamer，设置一个正确的binlog位置并使用Stream接受数据，具体可以使用sendTransaction进行具体的行为定义
 
 ### Example
@@ -51,5 +51,5 @@ github.com/go-sql-driver/mysql已经支持了所有的协议包的读写，但�
 [doc]: https://godoc.org/github.com/onlyac0611/binlog
 [ci-img]: https://travis-ci.com/onlyac0611/binlog.svg?branch=master
 [ci]: https://travis-ci.com/onlyac0611/binlog
-[cov-img]: https://coveralls.io/repos/github/onlyac0611/binlog/badge.svg?branch=master
-[cov]: https://coveralls.io/github/onlyac0611/binlog?branch=master
+[cov-img]: https://codecov.io/gh/onlyac0611/binlog/branch/master/graph/badge.svg
+[cov]: https://codecov.io/gh/onlyac0611/binlog
