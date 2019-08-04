@@ -73,4 +73,9 @@ func main() {
 		showTransaction(t, file)
 		return nil
 	})
+
+	if err != nil {
+		log.Fatalf("Stream fail. err: %v", err)
+		return
+	}
 }

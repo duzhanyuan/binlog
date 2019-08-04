@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -154,8 +155,14 @@ func ExampleRowStreamer_Stream() {
 			cancel()
 		}
 	}()
+
 	err = r.Stream(ctx, func(t *Transaction) error {
 		showTransaction(t)
 		return nil
 	})
+
+	if err != nil {
+		log.Fatalf("Stream fail. err: %v", err)
+		return
+	}
 }

@@ -297,8 +297,6 @@ func TestRowsEvent(t *testing.T) {
 	f := NewMySQL56BinlogFormat()
 	s := NewFakeBinlogStream()
 
-	tableID := uint64(0x102030405060)
-
 	tm := &TableMap{
 		Flags:    0x8090,
 		Database: "my_database",
@@ -347,10 +345,17 @@ func TestRowsEvent(t *testing.T) {
 	// Test the Rows we just created, to be sure.
 	// 1076895760 is 0x40302010.
 	identifies, err := rows.BytesIdentifiesForTests(tm, 0)
-	if expected := [][]byte{[]byte("1076895760"), []byte("abc")}; !reflect.DeepEqual(identifies, expected) {
-		t.Fatalf("bad Rows idenfity, got %v expected %v", identifies, expected)
+	if err != nil {
+		t.Fatalf("BytesIdentifiesForTests fail, err: %v", err)
 	}
+	if expected := [][]byte{[]byte("1076895760"), []byte("abc")}; !reflect.DeepEqual(identifies, expected) {
+		t.Fatalf("bad Rows identify, got %v expected %v", identifies, expected)
+	}
+
 	values, err := rows.BytesValuesForTests(tm, 0)
+	if err != nil {
+		t.Fatalf("BytesIdentifiesForTests fail, err: %v", err)
+	}
 	if expected := [][]byte{[]byte("1076895760"), []byte("abcd")}; !reflect.DeepEqual(values, expected) {
 		t.Fatalf("bad Rows data, got %v expected %v", values, expected)
 	}
@@ -368,7 +373,7 @@ func TestRowsEvent(t *testing.T) {
 		t.Fatalf("StripChecksum failed: %v", err)
 	}
 
-	tableID = ev.TableID(f)
+	tableID := ev.TableID(f)
 	if tableID != 0x102030405060 {
 		t.Fatalf("NewRowsEvent().TableID returned %x", tableID)
 	}

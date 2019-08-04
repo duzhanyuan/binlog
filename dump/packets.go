@@ -1001,7 +1001,7 @@ func (mc *MysqlConn) writeDumpBinlogPosPacket(serverID, offset uint32, filename 
 	pos = writeUint32(data, pos, uint32(offset))
 	pos = writeUint16(data, pos, flags)
 	pos = writeUint32(data, pos, serverID)
-	pos = writeEOFString(data, pos, filename)
+	writeEOFString(data, pos, filename)
 
 	return mc.writePacket(data)
 }

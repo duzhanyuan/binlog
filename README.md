@@ -1,6 +1,6 @@
 # binlog
 
-[![GoDoc][doc-img]][doc][![Build Status][ci-img]][ci][![Coverage Status][cov-img]][cov]
+[![Go Report Card][report-img]][report][![GoDoc][doc-img]][doc][![Build Status][ci-img]][ci][![Coverage Status][cov-img]][cov]
 
 binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更，提供轻量级，快速的dump协议交互以及binlog的row模式下的格式解析
 
@@ -56,6 +56,9 @@ github.com/youtube/vitess/go/mysql已经完整地支持mysql 5.6+所有的bonlog
 + conver.sh 用于计算项目的单元测试代码覆盖率
 + grant.sql 用于创建并授权example
 
+
+[report-img]: https://goreportcard.com/badge/github.com/onlyac0611/binlog
+[report]: https://goreportcard.com/report/github.com/onlyac0611/binlog
 [doc-img]: https://godoc.org/github.com/onlyac0611/binlog?status.svg
 [doc]: https://godoc.org/github.com/onlyac0611/binlog
 [ci-img]: https://travis-ci.com/onlyac0611/binlog.svg?branch=master

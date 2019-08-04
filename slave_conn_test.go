@@ -129,6 +129,9 @@ func Test_slaveConn_startDumpFromBinlogPosition_Error(t *testing.T) {
 	}
 
 	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
+	if err != nil {
+		t.Fatalf("startDumpFromBinlogPosition fail. err: %v", err)
+	}
 	<-event
 	for _, v := range testCases {
 		out := logBuf.String()
@@ -167,6 +170,9 @@ func Test_slaveConn_startDumpFromBinlogPosition_EOF(t *testing.T) {
 	}
 
 	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
+	if err != nil {
+		t.Fatalf("startDumpFromBinlogPosition fail. err: %v", err)
+	}
 	<-event
 	for _, v := range testCases {
 		out := logBuf.String()
