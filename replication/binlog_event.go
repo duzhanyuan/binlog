@@ -6,7 +6,7 @@
 // 该包在vitess中有较多依赖，不便在其他项目中使用，
 // 该包的mysql协议有些变化，如Decimal数据小数点后的缺少前置0等问题。
 //
-// 目前event已经支持m/github.com/onlyac0611/binlogysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更，未来将支持全部
+// 目前已经支持mysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更，未来将支持全部
 package replication
 
 import (
