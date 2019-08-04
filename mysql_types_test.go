@@ -1,4 +1,4 @@
-package meta
+package binlog
 
 import (
 	"testing"
@@ -598,10 +598,10 @@ func TestColumnType_IsGeometry(t *testing.T) {
 }
 
 func TestFormatType_IsRow(t *testing.T) {
-	testCases := map[BinlogFormatType]bool{
-		BinlogFormatType(BinlogFormatTypeRow):       true,
-		BinlogFormatType(BinlogFormatTypeMixed):     false,
-		BinlogFormatType(BinlogFormatTypeStatement): false,
+	testCases := map[FormatType]bool{
+		FormatType(FormatTypeRow):       true,
+		FormatType(FormatTypeMixed):     false,
+		FormatType(FormatTypeStatement): false,
 	}
 	for input, want := range testCases {
 		out := input.IsRow()

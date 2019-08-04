@@ -1,4 +1,4 @@
-package meta
+package binlog
 
 //MysqlColumn 用于实现mysql表列的接口
 type MysqlColumn interface {

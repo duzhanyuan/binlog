@@ -1,9 +1,8 @@
 export GO15VENDOREXPERIMENT=1
 
-PKGS = github.com/onlyac0611/binlog github.com/onlyac0611/binlog/dump github.com/onlyac0611/binlog/event \
-github.com/onlyac0611/binlog/meta
+PKGS = github.com/onlyac0611/binlog github.com/onlyac0611/binlog/dump github.com/onlyac0611/binlog/replication
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?=*.go dump event meta
+PKG_FILES ?=*.go dump replication
 COVERALLS_TOKEN=WrkOJBvlULyqJtq7IeT5c8FcST2mkEy0q
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
@@ -56,3 +55,7 @@ test:
 .PHONY: cover
 cover:
 	./scripts/cover.sh $(PKGS)
+
+.PHONY: clean
+clean:
+	go clean

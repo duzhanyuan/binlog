@@ -6,8 +6,7 @@ import (
 	"sync"
 
 	"github.com/onlyac0611/binlog/dump"
-	"github.com/onlyac0611/binlog/event"
-	"github.com/onlyac0611/binlog/meta"
+	"github.com/onlyac0611/binlog/replication"
 )
 
 type dumpConn interface {
@@ -65,7 +64,7 @@ func (s *slaveConn) prepareForReplication() error {
 }
 
 func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID uint32,
-	pos meta.BinlogPosition) (<-chan event.BinlogEvent, error) {
+	pos Position) (<-chan replication.BinlogEvent, error) {
 	ctx, s.cancel = context.WithCancel(ctx)
 
 	lw.logger().Infof("startDumpFromBinlogPosition sending binlog dump command: startPos: %+v slaveID: %v", pos, serverID)
@@ -79,7 +78,7 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	}
 
 	// FIXME(xd.fang) I think we can use a buffered channel for better performance.
-	eventChan := make(chan event.BinlogEvent)
+	eventChan := make(chan replication.BinlogEvent)
 
 	go func() {
 		defer close(eventChan)
@@ -96,7 +95,7 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 			}
 
 			select {
-			case eventChan <- event.NewMysql56BinlogEvent(buf[1:]):
+			case eventChan <- replication.NewMysql56BinlogEvent(buf[1:]):
 			case <-ctx.Done():
 				lw.logger().Infof("startDumpFromBinlogPosition stop by ctx. reason: %v", ctx.Err())
 				return

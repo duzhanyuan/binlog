@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/onlyac0611/binlog/dump"
-	"github.com/onlyac0611/binlog/meta"
 )
 
 type mockDumpConn struct {
@@ -86,7 +85,7 @@ func Test_slaveConn_startDumpFromBinlogPosition(t *testing.T) {
 		connBuf.Write(v.input)
 	}
 
-	events, err := s.startDumpFromBinlogPosition(context.Background(), 1, meta.BinlogPosition{})
+	events, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
 	for _, v := range testCases {
 		select {
 		case ev, ok := <-events:
@@ -129,7 +128,7 @@ func Test_slaveConn_startDumpFromBinlogPosition_Error(t *testing.T) {
 		connBuf.Write(v.input)
 	}
 
-	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, meta.BinlogPosition{})
+	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
 	<-event
 	for _, v := range testCases {
 		out := logBuf.String()
@@ -167,7 +166,7 @@ func Test_slaveConn_startDumpFromBinlogPosition_EOF(t *testing.T) {
 		connBuf.Write(v.input)
 	}
 
-	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, meta.BinlogPosition{})
+	event, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
 	<-event
 	for _, v := range testCases {
 		out := logBuf.String()

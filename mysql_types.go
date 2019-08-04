@@ -1,9 +1,9 @@
-package meta
+package binlog
 
 import (
 	"strings"
 
-	"github.com/onlyac0611/binlog/event"
+	"github.com/onlyac0611/binlog/replication"
 )
 
 //StatementType means the sql statement type
@@ -89,37 +89,37 @@ func GetStatementCategory(sql string) StatementType {
 
 //列数据类型
 const (
-	ColumnTypeDecimal    = event.TypeDecimal    //精确实数
-	ColumnTypeTiny       = event.TypeTiny       //int8
-	ColumnTypeShort      = event.TypeShort      //int16
-	ColumnTypeLong       = event.TypeLong       //int32
-	ColumnTypeFloat      = event.TypeFloat      //float32
-	ColumnTypeDouble     = event.TypeDouble     //float64
-	ColumnTypeNull       = event.TypeNull       //null
-	ColumnTypeTimestamp  = event.TypeTimestamp  //时间戳
-	ColumnTypeLongLong   = event.TypeLongLong   //int64
-	ColumnTypeInt24      = event.TypeInt24      //int24
-	ColumnTypeDate       = event.TypeDate       //日期
-	ColumnTypeTime       = event.TypeTime       //时间
-	ColumnTypeDateTime   = event.TypeDateTime   //日期时间
-	ColumnTypeYear       = event.TypeYear       //year
-	ColumnTypeNewDate    = event.TypeNewDate    //日期
-	ColumnTypeVarchar    = event.TypeVarchar    //可变字符串
-	ColumnTypeBit        = event.TypeBit        //bit
-	ColumnTypeTimestamp2 = event.TypeTimestamp2 //时间戳
-	ColumnTypeDateTime2  = event.TypeDateTime2  //日期时间
-	ColumnTypeTime2      = event.TypeTime2      //时间
-	ColumnTypeJSON       = event.TypeJSON       //json
-	ColumnTypeNewDecimal = event.TypeNewDecimal //精确实数
-	ColumnTypeEnum       = event.TypeEnum       //枚举
-	ColumnTypeSet        = event.TypeSet        //字符串
-	ColumnTypeTinyBlob   = event.TypeTinyBlob   //小型二进制
-	ColumnTypeMediumBlob = event.TypeMediumBlob //中型二进制
-	ColumnTypeLongBlob   = event.TypeLongBlob   //长型二进制
-	ColumnTypeBlob       = event.TypeBlob       //长型二进制
-	ColumnTypeVarString  = event.TypeVarString  //可变字符串
-	ColumnTypeString     = event.TypeString     //字符串
-	ColumnTypeGeometry   = event.TypeGeometry   //几何
+	ColumnTypeDecimal    = replication.TypeDecimal    //精确实数
+	ColumnTypeTiny       = replication.TypeTiny       //int8
+	ColumnTypeShort      = replication.TypeShort      //int16
+	ColumnTypeLong       = replication.TypeLong       //int32
+	ColumnTypeFloat      = replication.TypeFloat      //float32
+	ColumnTypeDouble     = replication.TypeDouble     //float64
+	ColumnTypeNull       = replication.TypeNull       //null
+	ColumnTypeTimestamp  = replication.TypeTimestamp  //时间戳
+	ColumnTypeLongLong   = replication.TypeLongLong   //int64
+	ColumnTypeInt24      = replication.TypeInt24      //int24
+	ColumnTypeDate       = replication.TypeDate       //日期
+	ColumnTypeTime       = replication.TypeTime       //时间
+	ColumnTypeDateTime   = replication.TypeDateTime   //日期时间
+	ColumnTypeYear       = replication.TypeYear       //year
+	ColumnTypeNewDate    = replication.TypeNewDate    //日期
+	ColumnTypeVarchar    = replication.TypeVarchar    //可变字符串
+	ColumnTypeBit        = replication.TypeBit        //bit
+	ColumnTypeTimestamp2 = replication.TypeTimestamp2 //时间戳
+	ColumnTypeDateTime2  = replication.TypeDateTime2  //日期时间
+	ColumnTypeTime2      = replication.TypeTime2      //时间
+	ColumnTypeJSON       = replication.TypeJSON       //json
+	ColumnTypeNewDecimal = replication.TypeNewDecimal //精确实数
+	ColumnTypeEnum       = replication.TypeEnum       //枚举
+	ColumnTypeSet        = replication.TypeSet        //字符串
+	ColumnTypeTinyBlob   = replication.TypeTinyBlob   //小型二进制
+	ColumnTypeMediumBlob = replication.TypeMediumBlob //中型二进制
+	ColumnTypeLongBlob   = replication.TypeLongBlob   //长型二进制
+	ColumnTypeBlob       = replication.TypeBlob       //长型二进制
+	ColumnTypeVarString  = replication.TypeVarString  //可变字符串
+	ColumnTypeString     = replication.TypeString     //字符串
+	ColumnTypeGeometry   = replication.TypeGeometry   //几何
 )
 
 //ColumnType 从binlog中获取的列类型
@@ -280,17 +280,17 @@ func (c ColumnType) IsGeometry() bool {
 	}
 }
 
-//BinlogFormatType binlog格式类型
-type BinlogFormatType string
+//FormatType binlog格式类型
+type FormatType string
 
 //binlog格式类型
 var (
-	BinlogFormatTypeRow       = BinlogFormatType("ROW")       //列
-	BinlogFormatTypeMixed     = BinlogFormatType("MIXED")     //混合
-	BinlogFormatTypeStatement = BinlogFormatType("STATEMENT") //语句
+	FormatTypeRow       = FormatType("ROW")       //列
+	FormatTypeMixed     = FormatType("MIXED")     //混合
+	FormatTypeStatement = FormatType("STATEMENT") //语句
 )
 
 //IsRow 是否是列binlog格式类型
-func (b BinlogFormatType) IsRow() bool {
-	return b == BinlogFormatTypeRow
+func (f FormatType) IsRow() bool {
+	return f == FormatTypeRow
 }

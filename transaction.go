@@ -1,15 +1,15 @@
-package meta
+package binlog
 
 //Transaction 代表一组有事务的binlog evnet
 type Transaction struct {
-	NowPosition  BinlogPosition //在binlog中的当前位置
-	NextPosition BinlogPosition //在binlog中的下一个位置
+	NowPosition  Position       //在binlog中的当前位置
+	NextPosition Position       //在binlog中的下一个位置
 	Timestamp    int64          //执行时间
 	Events       []*StreamEvent //一组有事务的binlog evnet
 }
 
 //NewTransaction 创建Transaction
-func NewTransaction(now, next BinlogPosition, timestamp int64,
+func NewTransaction(now, next Position, timestamp int64,
 	events []*StreamEvent) *Transaction {
 	return &Transaction{
 		NowPosition:  now,

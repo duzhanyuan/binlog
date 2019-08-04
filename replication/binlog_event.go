@@ -1,4 +1,4 @@
-//Package event 用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
+//Package replication 用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
 // 完全支持mysql 5.6.x的所有数据格式解析，
 // 支持5.7.x的绝大多数数据格式解析，仅仅不支持JSON数据。
 //
@@ -7,7 +7,7 @@
 // 该包的mysql协议有些变化，如Decimal数据小数点后的缺少前置0等问题。
 //
 // 目前event已经支持m/github.com/onlyac0611/binlogysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更，未来将支持全部
-package event
+package replication
 
 import (
 	"fmt"

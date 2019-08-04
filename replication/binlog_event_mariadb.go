@@ -1,4 +1,4 @@
-package event
+package replication
 
 // mariadbBinlogEvent wraps a raw packet buffer and provides methods to examine
 // it by implementing BinlogEvent. Some methods are pulled in from

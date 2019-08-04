@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/onlyac0611/binlog/event"
-	"github.com/onlyac0611/binlog/meta"
+	"github.com/onlyac0611/binlog/replication"
 )
 
 var (
-	testBinlogPosParseEvents = meta.BinlogPosition{
+	testBinlogPosParseEvents = Position{
 		FileName: "binlog.000005",
 		Offset:   0,
 	}
 	tesInfo = &mysqlTableInfo{
-		name: meta.MysqlTableName{
+		name: MysqlTableName{
 			DbName:    "vt_test_keyspace",
 			TableName: "vt_a",
 		},
-		columns: []meta.MysqlColumn{
+		columns: []MysqlColumn{
 			&mysqlColumnAttribute{
 				field: "id",
 				typ:   "int(11)",
@@ -51,27 +50,27 @@ func newMockMapper() *mockMapper {
 	return &mockMapper{}
 }
 
-func (m *mockMapper) MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error) {
+func (m *mockMapper) MysqlTable(name MysqlTableName) (MysqlTable, error) {
 	return tesInfo, nil
 }
 
-func getInputData() []event.BinlogEvent {
+func getInputData() []replication.BinlogEvent {
 	// Create a tableMap event on the table.
 
-	f := event.NewMySQL56BinlogFormat()
-	s := event.NewFakeBinlogStream()
+	f := replication.NewMySQL56BinlogFormat()
+	s := replication.NewFakeBinlogStream()
 	s.ServerID = 62344
 
 	tableID := uint64(0x102030405060)
-	tm := &event.TableMap{
+	tm := &replication.TableMap{
 		Flags:    0x8090,
 		Database: "vt_test_keyspace",
 		Name:     "vt_a",
 		Types: []byte{
-			event.TypeLong,
-			event.TypeVarchar,
+			replication.TypeLong,
+			replication.TypeVarchar,
 		},
-		CanBeNull: event.NewServerBitmap(2),
+		CanBeNull: replication.NewServerBitmap(2),
 		Metadata: []uint16{
 			0,
 			384, // A VARCHAR(128) in utf8 would result in 384.
@@ -80,12 +79,12 @@ func getInputData() []event.BinlogEvent {
 	tm.CanBeNull.Set(1, true)
 
 	// Do an insert packet with all fields set.
-	insertRows := event.Rows{
+	insertRows := replication.Rows{
 		Flags:       0x1234,
-		DataColumns: event.NewServerBitmap(2),
-		Rows: []event.Row{
+		DataColumns: replication.NewServerBitmap(2),
+		Rows: []replication.Row{
 			{
-				NullColumns: event.NewServerBitmap(2),
+				NullColumns: replication.NewServerBitmap(2),
 				Data: []byte{
 					0x10, 0x20, 0x30, 0x40, // long
 					0x04, 0x00, // len('abcd')
@@ -98,14 +97,14 @@ func getInputData() []event.BinlogEvent {
 	insertRows.DataColumns.Set(1, true)
 
 	// Do an update packet with all fields set.
-	updateRows := event.Rows{
+	updateRows := replication.Rows{
 		Flags:           0x1234,
-		IdentifyColumns: event.NewServerBitmap(2),
-		DataColumns:     event.NewServerBitmap(2),
-		Rows: []event.Row{
+		IdentifyColumns: replication.NewServerBitmap(2),
+		DataColumns:     replication.NewServerBitmap(2),
+		Rows: []replication.Row{
 			{
-				NullIdentifyColumns: event.NewServerBitmap(2),
-				NullColumns:         event.NewServerBitmap(2),
+				NullIdentifyColumns: replication.NewServerBitmap(2),
+				NullColumns:         replication.NewServerBitmap(2),
 				Identify: []byte{
 					0x10, 0x20, 0x30, 0x40, // long
 					0x03, 0x00, // len('abc')
@@ -125,12 +124,12 @@ func getInputData() []event.BinlogEvent {
 	updateRows.DataColumns.Set(1, true)
 
 	// Do a delete packet with all fields set.
-	deleteRows := event.Rows{
+	deleteRows := replication.Rows{
 		Flags:           0x1234,
-		IdentifyColumns: event.NewServerBitmap(2),
-		Rows: []event.Row{
+		IdentifyColumns: replication.NewServerBitmap(2),
+		Rows: []replication.Row{
 			{
-				NullIdentifyColumns: event.NewServerBitmap(2),
+				NullIdentifyColumns: replication.NewServerBitmap(2),
 				Identify: []byte{
 					0x10, 0x20, 0x30, 0x40, // long
 					0x03, 0x00, // len('abc')
@@ -142,21 +141,21 @@ func getInputData() []event.BinlogEvent {
 	deleteRows.IdentifyColumns.Set(0, true)
 	deleteRows.IdentifyColumns.Set(1, true)
 
-	return []event.BinlogEvent{
-		event.NewRotateEvent(f, s, uint64(testBinlogPosParseEvents.Offset), testBinlogPosParseEvents.FileName),
-		event.NewFormatDescriptionEvent(f, s),
-		event.NewTableMapEvent(f, s, tableID, tm),
-		event.NewQueryEvent(f, s, event.Query{
+	return []replication.BinlogEvent{
+		replication.NewRotateEvent(f, s, uint64(testBinlogPosParseEvents.Offset), testBinlogPosParseEvents.FileName),
+		replication.NewFormatDescriptionEvent(f, s),
+		replication.NewTableMapEvent(f, s, tableID, tm),
+		replication.NewQueryEvent(f, s, replication.Query{
 			Database: "vt_test_keyspace",
 			SQL:      "BEGIN"}),
-		event.NewWriteRowsEvent(f, s, tableID, insertRows),
-		event.NewUpdateRowsEvent(f, s, tableID, updateRows),
-		event.NewDeleteRowsEvent(f, s, tableID, deleteRows),
-		event.NewXIDEvent(f, s),
+		replication.NewWriteRowsEvent(f, s, tableID, insertRows),
+		replication.NewUpdateRowsEvent(f, s, tableID, updateRows),
+		replication.NewDeleteRowsEvent(f, s, tableID, deleteRows),
+		replication.NewXIDEvent(f, s),
 	}
 }
 
-func checkTransactionEqual(t *meta.Transaction, right *meta.Transaction) error {
+func checkTransactionEqual(t *Transaction, right *Transaction) error {
 	if t.NowPosition != right.NowPosition {
 		return fmt.Errorf("NowPosition is not equal. left: %v, right: %v", t.NowPosition, right.NowPosition)
 	}
@@ -176,7 +175,7 @@ func checkTransactionEqual(t *meta.Transaction, right *meta.Transaction) error {
 	return nil
 }
 
-func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
+func checkStreamEventEqual(s *StreamEvent, right *StreamEvent) error {
 	if s.Type != right.Type {
 		return fmt.Errorf("type is not equal. left: %v, right: %v", s.Type, right.Type)
 	}
@@ -214,7 +213,7 @@ func checkStreamEventEqual(s *meta.StreamEvent, right *meta.StreamEvent) error {
 	return nil
 }
 
-func checkRowDataEqual(r *meta.RowData, right *meta.RowData) error {
+func checkRowDataEqual(r *RowData, right *RowData) error {
 	if len(r.Columns) != len(right.Columns) {
 		return fmt.Errorf("len of columns is not match.left: %v right: %v", len(r.Columns), len(right.Columns))
 	}
@@ -226,7 +225,7 @@ func checkRowDataEqual(r *meta.RowData, right *meta.RowData) error {
 	return nil
 }
 
-func checkColumnDataEqual(c *meta.ColumnData, right *meta.ColumnData) error {
+func checkColumnDataEqual(c *ColumnData, right *ColumnData) error {
 	if c.Filed != right.Filed {
 		return fmt.Errorf("filed is not equal. left: %v, right: %v", c.Filed, right.Filed)
 	}
@@ -249,88 +248,88 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 
 	input := getInputData()
 
-	want := &meta.Transaction{
+	want := &Transaction{
 		NowPosition: testBinlogPosParseEvents,
-		NextPosition: meta.BinlogPosition{
+		NextPosition: Position{
 			FileName: testBinlogPosParseEvents.FileName,
 			Offset:   4,
 		},
-		Events: []*meta.StreamEvent{
+		Events: []*StreamEvent{
 			{
-				Type:      meta.StatementInsert,
+				Type:      StatementInsert,
 				Timestamp: 1407805592,
 				Table:     tesInfo.name,
 				SQL:       "",
-				RowValues: []*meta.RowData{
+				RowValues: []*RowData{
 					{
-						Columns: []*meta.ColumnData{
+						Columns: []*ColumnData{
 							{
 								Filed: "id",
 								Data:  []byte("1076895760"),
-								Type:  meta.ColumnTypeLong,
+								Type:  ColumnTypeLong,
 							},
 							{
 								Filed: "message",
 								Data:  []byte("abcd"),
-								Type:  meta.ColumnTypeVarchar,
+								Type:  ColumnTypeVarchar,
 							},
 						},
 					},
 				},
 			},
 			{
-				Type:      meta.StatementUpdate,
+				Type:      StatementUpdate,
 				Table:     tesInfo.name,
 				Timestamp: 1407805592,
-				RowIdentifies: []*meta.RowData{
+				RowIdentifies: []*RowData{
 					{
-						Columns: []*meta.ColumnData{
+						Columns: []*ColumnData{
 							{
 								Filed: "id",
 								Data:  []byte("1076895760"),
-								Type:  meta.ColumnTypeLong,
+								Type:  ColumnTypeLong,
 							},
 							{
 								Filed: "message",
 								Data:  []byte("abc"),
-								Type:  meta.ColumnTypeVarchar,
+								Type:  ColumnTypeVarchar,
 							},
 						},
 					},
 				},
-				RowValues: []*meta.RowData{
+				RowValues: []*RowData{
 					{
-						Columns: []*meta.ColumnData{
+						Columns: []*ColumnData{
 							{
 								Filed: "id",
 								Data:  []byte("1076895760"),
-								Type:  meta.ColumnTypeLong,
+								Type:  ColumnTypeLong,
 							},
 							{
 								Filed: "message",
 								Data:  []byte("abcd"),
-								Type:  meta.ColumnTypeVarchar,
+								Type:  ColumnTypeVarchar,
 							},
 						},
 					},
 				},
 			},
 			{
-				Type:      meta.StatementDelete,
+				Type:      StatementDelete,
 				Timestamp: 1407805592,
 				Table:     tesInfo.name,
-				RowIdentifies: []*meta.RowData{
+				RowIdentifies: []*RowData{
 					{
-						Columns: []*meta.ColumnData{
+						Columns: []*ColumnData{
 							{
 								Filed: "id",
 								Data:  []byte("1076895760"),
-								Type:  meta.ColumnTypeLong,
+								Type:  ColumnTypeLong,
 							},
 							{
 								Filed: "message",
 								Data:  []byte("abc"),
-								Type:  meta.ColumnTypeVarchar,
+								Type:  ColumnTypeVarchar,
 							},
 						},
 					},
@@ -348,13 +347,13 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 	}
 	r.SetStartBinlogPosition(testBinlogPosParseEvents)
 
-	var out *meta.Transaction
-	r.sendTransaction = func(tran *meta.Transaction) error {
+	var out *Transaction
+	r.sendTransaction = func(tran *Transaction) error {
 		out = tran
 		return nil
 	}
 
-	events := make(chan event.BinlogEvent)
+	events := make(chan replication.BinlogEvent)
 	go func() {
 		for i := range input {
 			events <- input[i]

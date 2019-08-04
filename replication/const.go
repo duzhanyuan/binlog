@@ -1,4 +1,4 @@
-package event
+package replication
 
 // This file contains the constant definitions for this package.
 

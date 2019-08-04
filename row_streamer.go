@@ -1,4 +1,3 @@
-//Package binlog 将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更，提供轻量级，快速的dump协议交互以及binlog的row模式下的格式解析
 package binlog
 
 import (
@@ -8,8 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/onlyac0611/binlog/dump"
-	"github.com/onlyac0611/binlog/event"
-	"github.com/onlyac0611/binlog/meta"
+	"github.com/onlyac0611/binlog/replication"
 )
 
 //信息流到达EOF错误信息用于标识binlog流结束
@@ -19,7 +17,7 @@ var (
 
 //MysqlTableMapper 用于获取表信息的接口
 type MysqlTableMapper interface {
-	MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error)
+	MysqlTable(name MysqlTableName) (MysqlTable, error)
 }
 
 //RowStreamer 从github.com/youtube/vitess/go/vt/binlog/binlog_streamer.go的基础上移植过来
@@ -33,15 +31,16 @@ type RowStreamer struct {
 }
 
 //SendTransactionFunc 处理事务信息函数，你可以将一个chan注册到这个函数中如
-//   func getTransaction(tran *meta.Transaction) error{
+//   func getTransaction(tran *Transaction) error{
 //	     Transactions <- tran
 //	     return nil
 //   }
-type SendTransactionFunc func(*meta.Transaction) error
+//如果这个函数返回错误，那么RowStreamer.Stream会停止dump以及解析binlog且返回错误
+type SendTransactionFunc func(*Transaction) error
 
 type tableCache struct {
-	tableMap *event.TableMap
-	table    meta.MysqlTable
+	tableMap *replication.TableMap
+	table    MysqlTable
 }
 
 //NewRowStreamer dsn是mysql数据库的信息，serverID是标识该数据库的信息
@@ -55,12 +54,12 @@ func NewRowStreamer(dsn string, serverID uint32,
 }
 
 //SetStartBinlogPosition 设置开始的binlog位置
-func (s *RowStreamer) SetStartBinlogPosition(startPos meta.BinlogPosition) {
+func (s *RowStreamer) SetStartBinlogPosition(startPos Position) {
 	s.startPos.Store(startPos)
 }
 
-func (s *RowStreamer) startBinlogPosition() meta.BinlogPosition {
-	return s.startPos.Load().(meta.BinlogPosition)
+func (s *RowStreamer) startBinlogPosition() Position {
+	return s.startPos.Load().(Position)
 }
 
 //Stream 注册一个处理事务信息函数到Stream中
@@ -73,8 +72,8 @@ func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactio
 	}
 	defer conn.close()
 	s.sendTransaction = sendTransaction
-	var events <-chan event.BinlogEvent
-	var pos meta.BinlogPosition
+	var events <-chan replication.BinlogEvent
+	var pos Position
 	events, err = conn.startDumpFromBinlogPosition(ctx, s.serverID, s.startBinlogPosition())
 	pos, err = s.parseEvents(ctx, events)
 	if err != nil {
@@ -84,9 +83,9 @@ func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactio
 	return nil
 }
 
-func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.BinlogEvent) (meta.BinlogPosition, error) {
-	var tranEvents []*meta.StreamEvent
-	var format event.BinlogFormat
+func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan replication.BinlogEvent) (Position, error) {
+	var tranEvents []*StreamEvent
+	var format replication.BinlogFormat
 	var err error
 	pos := s.startBinlogPosition()
 	tablesMaps := make(map[uint64]*tableCache)
@@ -97,15 +96,15 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			// If this happened, it would be a legitimate error.
 			lw.logger().Errorf("parseEvents BEGIN in binlog stream while still in another transaction; dropping %d transactionEvents: %+v", len(tranEvents), tranEvents)
 		}
-		tranEvents = make([]*meta.StreamEvent, 0, 10)
+		tranEvents = make([]*StreamEvent, 0, 10)
 		autocommit = false
 	}
 
-	commit := func(ev event.BinlogEvent) error {
+	commit := func(ev replication.BinlogEvent) error {
 		now := pos
 		pos.Offset = ev.NextPosition()
 		next := pos
-		tran := meta.NewTransaction(now, next, int64(ev.Timestamp()), tranEvents)
+		tran := NewTransaction(now, next, int64(ev.Timestamp()), tranEvents)
 		if err = s.sendTransaction(tran); err != nil {
 			return fmt.Errorf("parseEvents sendTransaction error: %v", err)
 		}
@@ -115,7 +114,7 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 	}
 
 	for {
-		var ev event.BinlogEvent
+		var ev replication.BinlogEvent
 		var ok bool
 		select {
 		case ev, ok = <-events:
@@ -184,17 +183,17 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 			if err != nil {
 				return pos, fmt.Errorf("parseEvents can't get query from binlog event: %v, event data: %+v", err, ev)
 			}
-			typ := meta.GetStatementCategory(q.SQL)
+			typ := GetStatementCategory(q.SQL)
 
 			lw.logger().Debugf("parseEvents pos: %+v binlog event is a query event: %+v query: %v", pos, ev, q.SQL)
 
 			switch typ {
-			case meta.StatementBegin:
+			case StatementBegin:
 				begin()
-			case meta.StatementRollback:
+			case StatementRollback:
 				tranEvents = nil
 				fallthrough
-			case meta.StatementCommit:
+			case StatementCommit:
 				if err = commit(ev); err != nil {
 					return pos, err
 				}
@@ -223,15 +222,15 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 				tableMap: tm,
 			}
 
-			name := meta.NewMysqlTableName(tm.Database, tm.Name)
+			name := NewMysqlTableName(tm.Database, tm.Name)
 
-			var info meta.MysqlTable
+			var info MysqlTable
 			if info, err = s.tableMapper.MysqlTable(name); err != nil {
 				return pos, fmt.Errorf("parseEvents MysqlTable fail. table: %v, err： %v", name.String(), err)
 			}
 
 			if len(info.Columns()) != tm.CanBeNull.Count() {
-				return meta.BinlogPosition{},
+				return Position{},
 					fmt.Errorf("parseEvents the length of column in tableMap(%d) "+
 						"did not equal to the length of column in table info(%d)", tm.CanBeNull.Count(),
 						len(info.Columns()))
@@ -339,8 +338,8 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan event.Binlo
 	}
 }
 
-func appendUpdateEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64) (*meta.StreamEvent, error) {
-	ev := meta.NewStreamEvent(meta.StatementUpdate, timestamp, tc.table.Name())
+func appendUpdateEventFromRows(tc *tableCache, rows *replication.Rows, timestamp int64) (*StreamEvent, error) {
+	ev := NewStreamEvent(StatementUpdate, timestamp, tc.table.Name())
 	for i := range rows.Rows {
 		identifies, err := getIdentifiesFromRow(tc, rows, i)
 		if err != nil {
@@ -358,8 +357,8 @@ func appendUpdateEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64
 	return ev, nil
 }
 
-func appendInsertEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64) (*meta.StreamEvent, error) {
-	ev := meta.NewStreamEvent(meta.StatementInsert, timestamp, tc.table.Name())
+func appendInsertEventFromRows(tc *tableCache, rows *replication.Rows, timestamp int64) (*StreamEvent, error) {
+	ev := NewStreamEvent(StatementInsert, timestamp, tc.table.Name())
 	for i := range rows.Rows {
 		values, err := getValuesFromRow(tc, rows, i)
 		if err != nil {
@@ -370,8 +369,8 @@ func appendInsertEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64
 	return ev, nil
 }
 
-func appendDeleteEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64) (*meta.StreamEvent, error) {
-	ev := meta.NewStreamEvent(meta.StatementDelete, timestamp, tc.table.Name())
+func appendDeleteEventFromRows(tc *tableCache, rows *replication.Rows, timestamp int64) (*StreamEvent, error) {
+	ev := NewStreamEvent(StatementDelete, timestamp, tc.table.Name())
 	for i := range rows.Rows {
 		identifies, err := getIdentifiesFromRow(tc, rows, i)
 		if err != nil {
@@ -382,7 +381,7 @@ func appendDeleteEventFromRows(tc *tableCache, rows *event.Rows, timestamp int64
 	return ev, nil
 }
 
-func getValuesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.RowData, error) {
+func getValuesFromRow(tc *tableCache, rs *replication.Rows, rowIndex int) (*RowData, error) {
 	data := rs.Rows[rowIndex].Data
 	valueIndex := 0
 	pos := 0
@@ -391,10 +390,10 @@ func getValuesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.RowDa
 		return nil, fmt.Errorf("getValuesFromRow the length of column(%d) in rows did not equal to "+
 			"the length of column in table metadata(%d)", rs.DataColumns.Count(), len(tc.table.Columns()))
 	}
-	values := meta.NewRowData(rs.IdentifyColumns.Count())
+	values := NewRowData(rs.IdentifyColumns.Count())
 
 	for c := 0; c < rs.DataColumns.Count(); c++ {
-		column := meta.NewColumnData(tc.table.Columns()[c].Field(), meta.ColumnType(tc.tableMap.Types[c]),
+		column := NewColumnData(tc.table.Columns()[c].Field(), ColumnType(tc.tableMap.Types[c]),
 			false)
 
 		if !rs.DataColumns.Bit(c) {
@@ -413,7 +412,7 @@ func getValuesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.RowDa
 		var l int
 		var err error
 
-		column.Data, l, err = event.CellBytes(data, pos, tc.tableMap.Types[c], tc.tableMap.Metadata[c],
+		column.Data, l, err = replication.CellBytes(data, pos, tc.tableMap.Types[c], tc.tableMap.Metadata[c],
 			tc.table.Columns()[c].IsUnSignedInt())
 
 		if err != nil {
@@ -429,7 +428,7 @@ func getValuesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.RowDa
 	return values, nil
 }
 
-func getIdentifiesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.RowData, error) {
+func getIdentifiesFromRow(tc *tableCache, rs *replication.Rows, rowIndex int) (*RowData, error) {
 	data := rs.Rows[rowIndex].Identify
 	identifyIndex := 0
 	pos := 0
@@ -437,10 +436,10 @@ func getIdentifiesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.R
 		return nil, fmt.Errorf("getIdentifiesFromRow the length of IdentifyColumns(%d) in rows did not equal to "+
 			"the length of column in table metadata(%d)", rs.IdentifyColumns.Count(), len(tc.table.Columns()))
 	}
-	identifies := meta.NewRowData(rs.IdentifyColumns.Count())
+	identifies := NewRowData(rs.IdentifyColumns.Count())
 	for c := 0; c < rs.IdentifyColumns.Count(); c++ {
 
-		column := meta.NewColumnData(tc.table.Columns()[c].Field(), meta.ColumnType(tc.tableMap.Types[c]),
+		column := NewColumnData(tc.table.Columns()[c].Field(), ColumnType(tc.tableMap.Types[c]),
 			false)
 		if !rs.IdentifyColumns.Bit(c) {
 			column.IsEmpty = true
@@ -458,7 +457,7 @@ func getIdentifiesFromRow(tc *tableCache, rs *event.Rows, rowIndex int) (*meta.R
 		var l int
 		var err error
 
-		column.Data, l, err = event.CellBytes(data, pos, tc.tableMap.Types[c], tc.tableMap.Metadata[c],
+		column.Data, l, err = replication.CellBytes(data, pos, tc.tableMap.Types[c], tc.tableMap.Metadata[c],
 			tc.table.Columns()[c].IsUnSignedInt())
 		if err != nil {
 			return nil, err

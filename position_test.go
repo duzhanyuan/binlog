@@ -1,37 +1,37 @@
-package meta
+package binlog
 
 import (
 	"testing"
 )
 
-func TestBinlogPosition_IsZero(t *testing.T) {
+func TestPosition_IsZero(t *testing.T) {
 	testCases := []struct {
-		input BinlogPosition
+		input Position
 		want  bool
 	}{
 		{
-			input: BinlogPosition{
+			input: Position{
 				FileName: "",
 				Offset:   0,
 			},
 			want: true,
 		},
 		{
-			input: BinlogPosition{
+			input: Position{
 				FileName: "",
 				Offset:   1,
 			},
 			want: true,
 		},
 		{
-			input: BinlogPosition{
+			input: Position{
 				FileName: "xxx",
 				Offset:   0,
 			},
 			want: true,
 		},
 		{
-			input: BinlogPosition{
+			input: Position{
 				FileName: "xxx",
 				Offset:   1,
 			},

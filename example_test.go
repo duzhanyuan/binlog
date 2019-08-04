@@ -7,9 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-
 	//_ "github.com/go-sql-driver/mysql" you need it in you own project
-	"github.com/onlyac0611/binlog/meta"
 )
 
 const (
@@ -37,15 +35,15 @@ func (m *mysqlColumnAttribute) IsUnSignedInt() bool {
 }
 
 type mysqlTableInfo struct {
-	name    meta.MysqlTableName
-	columns []meta.MysqlColumn
+	name    MysqlTableName
+	columns []MysqlColumn
 }
 
-func (m *mysqlTableInfo) Name() meta.MysqlTableName {
+func (m *mysqlTableInfo) Name() MysqlTableName {
 	return m.name
 }
 
-func (m *mysqlTableInfo) Columns() []meta.MysqlColumn {
+func (m *mysqlTableInfo) Columns() []MysqlColumn {
 	return m.columns
 }
 
@@ -53,7 +51,7 @@ type exampleMysqlTableMapper struct {
 	db *sql.DB
 }
 
-func (e *exampleMysqlTableMapper) GetBinlogFormat() (format meta.BinlogFormatType, err error) {
+func (e *exampleMysqlTableMapper) GetBinlogFormat() (format FormatType, err error) {
 	query := "SHOW VARIABLES LIKE 'binlog_format'"
 	var name, str string
 	err = e.db.QueryRow(query).Scan(&name, &str)
@@ -61,11 +59,11 @@ func (e *exampleMysqlTableMapper) GetBinlogFormat() (format meta.BinlogFormatTyp
 		err = fmt.Errorf("QueryRow fail. query: %s, error: %v", query, err)
 		return
 	}
-	format = meta.BinlogFormatType(str)
+	format = FormatType(str)
 	return
 }
 
-func (e *exampleMysqlTableMapper) GetBinlogPosition() (pos meta.BinlogPosition, err error) {
+func (e *exampleMysqlTableMapper) GetBinlogPosition() (pos Position, err error) {
 	query := "SHOW MASTER STATUS"
 	var metaDoDb, metaIgnoreDb, executedGTidSet string
 	err = e.db.QueryRow(query).Scan(&pos.FileName, &pos.Offset, &metaDoDb, &metaIgnoreDb, &executedGTidSet)
@@ -76,10 +74,10 @@ func (e *exampleMysqlTableMapper) GetBinlogPosition() (pos meta.BinlogPosition, 
 	return
 }
 
-func (e *exampleMysqlTableMapper) MysqlTable(name meta.MysqlTableName) (meta.MysqlTable, error) {
+func (e *exampleMysqlTableMapper) MysqlTable(name MysqlTableName) (MysqlTable, error) {
 	info := &mysqlTableInfo{
 		name:    name,
-		columns: make([]meta.MysqlColumn, 0, 10),
+		columns: make([]MysqlColumn, 0, 10),
 	}
 
 	query := "desc " + name.String()
@@ -100,7 +98,7 @@ func (e *exampleMysqlTableMapper) MysqlTable(name meta.MysqlTableName) (meta.Mys
 	return info, nil
 }
 
-func showTransaction(t *meta.Transaction) {
+func showTransaction(t *Transaction) {
 	for _, vi := range t.Events {
 		lw.logger().Print("nextPos:", t.NextPosition)
 		for _, vj := range vi.RowIdentifies {
@@ -167,7 +165,7 @@ func ExampleRowStreamer_Stream() {
 			cancel()
 		}
 	}()
-	err = r.Stream(ctx, func(t *meta.Transaction) error {
+	err = r.Stream(ctx, func(t *Transaction) error {
 		showTransaction(t)
 		return nil
 	})
