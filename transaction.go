@@ -24,8 +24,9 @@ func NewTransaction(now, next Position, timestamp int64,
 	}
 }
 
+//MarshalJSON 实现Transaction的json序列化
 func (t *Transaction) MarshalJSON() ([]byte, error) {
-	tJson := struct {
+	tJSON := struct {
 		NowPosition  Position       `json:"nowPosition"`
 		NextPosition Position       `json:"nextPosition"`
 		Timestamp    string         `json:"timestamp"`
@@ -36,7 +37,7 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		Timestamp:    time.Unix(t.Timestamp, 0).Local().String(),
 		Events:       t.Events,
 	}
-	return json.Marshal(tJson)
+	return json.Marshal(tJSON)
 }
 
 //StreamEvent means a SQL or a rows in binlog
@@ -62,38 +63,39 @@ func NewStreamEvent(tranType StatementType,
 	}
 }
 
-type baseStreamEventJson struct {
+type baseStreamEventJSON struct {
 	Table     MysqlTableName `json:"name"`
 	Type      string         `json:"type"`
 	Timestamp string         `json:"timestamp"`
 }
 
+//MarshalJSON 实现StreamEvent的json序列化
 func (s *StreamEvent) MarshalJSON() ([]byte, error) {
-	b := baseStreamEventJson{
+	b := baseStreamEventJSON{
 		Table:     s.Table,
 		Type:      s.Type.String(),
 		Timestamp: time.Unix(s.Timestamp, 0).Local().String(),
 	}
 	if s.SQL != "" {
-		SQLJson := struct {
-			baseStreamEventJson
+		sqlJSON := struct {
+			baseStreamEventJSON
 			SQL string `json:"sql"`
 		}{
-			baseStreamEventJson: b,
+			baseStreamEventJSON: b,
 			SQL:                 s.SQL,
 		}
-		return json.Marshal(SQLJson)
+		return json.Marshal(sqlJSON)
 	}
-	RowJson := struct {
-		baseStreamEventJson
+	RowJSON := struct {
+		baseStreamEventJSON
 		RowValues     []*RowData `json:"rowValues"`
 		RowIdentifies []*RowData `json:"rowIdentifies"`
 	}{
-		baseStreamEventJson: b,
+		baseStreamEventJSON: b,
 		RowValues:           s.RowValues,
 		RowIdentifies:       s.RowIdentifies,
 	}
-	return json.Marshal(RowJson)
+	return json.Marshal(RowJSON)
 }
 
 //RowData 行数据
@@ -125,14 +127,15 @@ func NewColumnData(filed string, typ ColumnType, isEmpty bool) *ColumnData {
 	}
 }
 
-type baseColumnJson struct {
+type baseColumnJSON struct {
 	Filed   string `json:"filed"`
 	Type    string `json:"type"`
 	IsEmpty bool   `json:"isEmpty"`
 }
 
+//MarshalJSON 实现ColumnData的json序列化
 func (c *ColumnData) MarshalJSON() ([]byte, error) {
-	b := baseColumnJson{
+	b := baseColumnJSON{
 		Filed:   c.Filed,
 		Type:    c.Type.String(),
 		IsEmpty: c.IsEmpty,
@@ -142,13 +145,13 @@ func (c *ColumnData) MarshalJSON() ([]byte, error) {
 	if c.Data == nil {
 		i = nil
 	}
-	notNullJson := struct {
-		baseColumnJson
+	notNullJSON := struct {
+		baseColumnJSON
 		Data interface{} `json:"data"`
 	}{
-		baseColumnJson: b,
+		baseColumnJSON: b,
 		Data:           i,
 	}
-	return json.Marshal(notNullJson)
+	return json.Marshal(notNullJSON)
 
 }
