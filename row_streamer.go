@@ -75,6 +75,10 @@ func (s *RowStreamer) Stream(ctx context.Context, sendTransaction SendTransactio
 	var events <-chan replication.BinlogEvent
 	var pos Position
 	events, err = conn.startDumpFromBinlogPosition(ctx, s.serverID, s.startBinlogPosition())
+	if err != nil {
+		return fmt.Errorf("startDumpFromBinlogPosition fail in pos: %+v error: %v", s.startPos, err)
+	}
+
 	pos, err = s.parseEvents(ctx, events)
 	if err != nil {
 		return fmt.Errorf("parseEvents fail in pos: %+v error: %v", s.startPos, err)

@@ -86,6 +86,9 @@ func Test_slaveConn_startDumpFromBinlogPosition(t *testing.T) {
 	}
 
 	events, err := s.startDumpFromBinlogPosition(context.Background(), 1, Position{})
+	if err != nil {
+		t.Fatalf("startDumpFromBinlogPosition fail. err: %v", err)
+	}
 	for _, v := range testCases {
 		select {
 		case ev, ok := <-events:
