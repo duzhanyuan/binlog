@@ -1,6 +1,6 @@
 # binlogStream
 
-binlogStream将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更,以json格式输出，是github.com/onlyac0611/binlog测试的一个例子
+binlogStream将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更,以json格式输出，是[binlog](https://github.com/onlyac0611/binlog)测试的一个例子
 
 ## Requests
 + mysql 5.6+
@@ -13,14 +13,14 @@ make example
 
 ## Quick Start
 ### Prepare
-+ 对于自建MySQL，需要先开启Binlog写入功能，配置binlog-format为ROW模式，my.cnf中配置如下:
++ 对于自建MySQL，需要先开启Binlog写入功能，配置binlog-format为ROW模式，使用config/my.cnf，配置如下:
 ```
 [mysqld]
 log-bin=mysql-bin # 开启 binlog
 binlog-format=ROW # 选择 ROW 模式
 server_id=1 # 配置 MySQL replaction 需要定义，不要和 canal 的 slaveId 重复
 ```
-+ 授权examle链接MySQL账号具有作为MySQL slave的权限，如果已有账户可直接grant
++ 授权examle链接MySQL账号具有作为MySQL slave的权限，如果已有账户可直接grant，使用scripts/grant.sql
 ```sql
 CREATE USER example IDENTIFIED BY 'example';                                    #创建用户example
 GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'example'@'%';    #授予SELECT,REPLICATION权限
@@ -28,8 +28,10 @@ FLUSH PRIVILEGES;                                                               
 ```
 
 ### Run
-使用./binlogStream
-测试脚本为tests/type_test.sql
++ 使用程序./binlogStream运行
++ 该程序的mysql数据库在本机
++ 测试脚本为tests/type_test.sql
++ 所有数据变更输出在transaction.txt
 
 ### Result
 参考transaction.txt的输出

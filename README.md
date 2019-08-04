@@ -21,19 +21,9 @@ go get github.com/onlyac0611/binlog
 ## Quick Start
 
 ### Prepare
-+ 对于自建MySQL，需要先开启Binlog写入功能，配置binlog-format为ROW模式，使用config/my.cnf，配置如下:
-```
-[mysqld]
-log-bin=mysql-bin # 开启 binlog
-binlog-format=ROW # 选择 ROW 模式
-server_id=1 # 配置 MySQL replaction 需要定义，不要和 canal 的 slaveId 重复
-```
-+ 授权examle链接MySQL账号具有作为MySQL slave的权限，如果已有账户可直接grant，使用scripts/grant.sql
-```sql
-CREATE USER example IDENTIFIED BY 'example';                                    #创建用户example
-GRANT SELECT, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'example'@'%';    #授予SELECT,REPLICATION权限
-FLUSH PRIVILEGES;                                                               #刷新权限
-```
++ 对于自建MySQL，需要先开启Binlog写入功能，配置binlog-format为ROW模式
++ 授权examle链接MySQL账号具有作为MySQL slave的权限，如果已有账户可直接grant
+
 ### Coding
 + 检查mysql的binlog格式是否是row模式，并且获取一个正确的binlog位置（以文件名和位移量作定义）
 + 实现MysqlTableMapper接口，该接口是用于获取表信息的，主要是获取列属性
