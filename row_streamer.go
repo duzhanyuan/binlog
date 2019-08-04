@@ -164,19 +164,19 @@ func (s *RowStreamer) parseEvents(ctx context.Context, events <-chan replication
 
 		switch {
 		case ev.IsXID(): // XID_EVENT (equivalent to COMMIT)
-			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event:", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event: %v:", pos, ev)
 			if err = commit(ev); err != nil {
 				return pos, err
 			}
 
 		case ev.IsRotate():
-			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event %+v:", pos, ev)
+			lw.logger().Debugf("parseEvents pos: %+v binlog event is a xid event %v:", pos, ev)
 			var filename string
 			var offset int64
 			if filename, offset, err = ev.Rotate(format); err != nil {
 				return pos, err
 			}
-			pos.FileName = filename
+			pos.Filename = filename
 			pos.Offset = offset
 		case ev.IsQuery():
 			q, err := ev.Query(format)

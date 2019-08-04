@@ -1,6 +1,7 @@
 export GO15VENDOREXPERIMENT=1
 
-PKGS = github.com/onlyac0611/binlog github.com/onlyac0611/binlog/dump github.com/onlyac0611/binlog/replication
+PRO_PATH=github.com/onlyac0611/binlog
+PKGS = ${PRO_PATH} ${PRO_PATH}/dump ${PRO_PATH}/replication
 # Many Go tools take file globs or directories as arguments instead of packages.
 PKG_FILES ?=*.go dump replication
 COVERALLS_TOKEN=WrkOJBvlULyqJtq7IeT5c8FcST2mkEy0q
@@ -50,7 +51,7 @@ endif
 
 .PHONY: test
 test:
-	@go test -race  ./...
+	@go test -race ${PKGS}
 
 .PHONY: cover
 cover:
@@ -58,4 +59,8 @@ cover:
 
 .PHONY: clean
 clean:
-	go clean
+	@go clean
+
+.PHONY: example
+example:
+	@cd tests/binlogStream && go build

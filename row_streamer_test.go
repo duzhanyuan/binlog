@@ -10,10 +10,6 @@ import (
 )
 
 var (
-	testBinlogPosParseEvents = Position{
-		FileName: "binlog.000005",
-		Offset:   0,
-	}
 	tesInfo = &mysqlTableInfo{
 		name: MysqlTableName{
 			DbName:    "vt_test_keyspace",
@@ -142,7 +138,7 @@ func getInputData() []replication.BinlogEvent {
 	deleteRows.IdentifyColumns.Set(1, true)
 
 	return []replication.BinlogEvent{
-		replication.NewRotateEvent(f, s, uint64(testBinlogPosParseEvents.Offset), testBinlogPosParseEvents.FileName),
+		replication.NewRotateEvent(f, s, uint64(testBinlogPosParseEvents.Offset), testBinlogPosParseEvents.Filename),
 		replication.NewFormatDescriptionEvent(f, s),
 		replication.NewTableMapEvent(f, s, tableID, tm),
 		replication.NewQueryEvent(f, s, replication.Query{
@@ -251,7 +247,7 @@ func TestRowStreamer_parseEvents(t *testing.T) {
 	want := &Transaction{
 		NowPosition: testBinlogPosParseEvents,
 		NextPosition: Position{
-			FileName: testBinlogPosParseEvents.FileName,
+			Filename: testBinlogPosParseEvents.Filename,
 			Offset:   4,
 		},
 		Events: []*StreamEvent{

@@ -68,7 +68,7 @@ func (s *slaveConn) startDumpFromBinlogPosition(ctx context.Context, serverID ui
 	ctx, s.cancel = context.WithCancel(ctx)
 
 	lw.logger().Infof("startDumpFromBinlogPosition sending binlog dump command: startPos: %+v slaveID: %v", pos, serverID)
-	if err := s.dc.NoticeDump(serverID, uint32(pos.Offset), pos.FileName, 0); err != nil {
+	if err := s.dc.NoticeDump(serverID, uint32(pos.Offset), pos.Filename, 0); err != nil {
 		return nil, fmt.Errorf("noticeDump fail. err: %v", err)
 	}
 

@@ -14,8 +14,8 @@ type MysqlTable interface {
 
 //MysqlTableName mysql的表名
 type MysqlTableName struct {
-	DbName    string //数据库名
-	TableName string //表名
+	DbName    string `json:"db"`    //数据库名
+	TableName string `json:"table"` //表名
 }
 
 //String 打印

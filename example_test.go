@@ -11,9 +11,7 @@ import (
 )
 
 const (
-	mysqlPrimaryKeyDescription    = "PRI"            //主键
-	mysqlAutoIncrementDescription = "auto_increment" //自增
-	mysqlUnsigned                 = "unsigned"       //无符号
+	mysqlUnsigned = "unsigned" //无符号
 )
 
 //列属性
@@ -66,7 +64,7 @@ func (e *exampleMysqlTableMapper) GetBinlogFormat() (format FormatType, err erro
 func (e *exampleMysqlTableMapper) GetBinlogPosition() (pos Position, err error) {
 	query := "SHOW MASTER STATUS"
 	var metaDoDb, metaIgnoreDb, executedGTidSet string
-	err = e.db.QueryRow(query).Scan(&pos.FileName, &pos.Offset, &metaDoDb, &metaIgnoreDb, &executedGTidSet)
+	err = e.db.QueryRow(query).Scan(&pos.Filename, &pos.Offset, &metaDoDb, &metaIgnoreDb, &executedGTidSet)
 	if err != nil {
 		err = fmt.Errorf("query fail. query: %s, error: %v", query, err)
 		return
@@ -99,21 +97,12 @@ func (e *exampleMysqlTableMapper) MysqlTable(name MysqlTableName) (MysqlTable, e
 }
 
 func showTransaction(t *Transaction) {
-	for _, vi := range t.Events {
-		lw.logger().Print("nextPos:", t.NextPosition)
-		for _, vj := range vi.RowIdentifies {
-			lw.logger().Print("type:", vi.Type.String(), "table:", vi.Table.String())
-			for _, vk := range vj.Columns {
-				lw.logger().Print("data：", string(vk.Data))
-			}
-		}
-		for _, vj := range vi.RowValues {
-			lw.logger().Print("type:", vi.Type.String(), "table:", vi.Table.String())
-			for _, vk := range vj.Columns {
-				lw.logger().Print("data：", string(vk.Data))
-			}
-		}
+	b, err := t.MarshalJSON()
+	if err != nil {
+		lw.logger().Errorf("MarshalJSON fail. err: %v", err)
+		return
 	}
+	lw.logger().Print("%v", string(b))
 }
 
 func ExampleRowStreamer_Stream() {

@@ -1,5 +1,10 @@
 package binlog
 
+import (
+	"encoding/json"
+	"time"
+)
+
 //Transaction 代表一组有事务的binlog evnet
 type Transaction struct {
 	NowPosition  Position       //在binlog中的当前位置
@@ -17,6 +22,21 @@ func NewTransaction(now, next Position, timestamp int64,
 		Timestamp:    timestamp,
 		Events:       events,
 	}
+}
+
+func (t *Transaction) MarshalJSON() ([]byte, error) {
+	tJson := struct {
+		NowPosition  Position       `json:"nowPosition"`
+		NextPosition Position       `json:"nextPosition"`
+		Timestamp    string         `json:"timestamp"`
+		Events       []*StreamEvent `json:"events"`
+	}{
+		NowPosition:  t.NowPosition,
+		NextPosition: t.NextPosition,
+		Timestamp:    time.Unix(t.Timestamp, 0).Local().String(),
+		Events:       t.Events,
+	}
+	return json.Marshal(tJson)
 }
 
 //StreamEvent means a SQL or a rows in binlog
@@ -42,6 +62,52 @@ func NewStreamEvent(tranType StatementType,
 	}
 }
 
+type baseStreamEventJson struct {
+	Table     MysqlTableName `json:"name"`
+	Type      string         `json:"type"`
+	Timestamp string         `json:"timestamp"`
+}
+
+func (s *StreamEvent) MarshalJSON() ([]byte, error) {
+	b := baseStreamEventJson{
+		Table:     s.Table,
+		Type:      s.Type.String(),
+		Timestamp: time.Unix(s.Timestamp, 0).Local().String(),
+	}
+	if s.SQL != "" {
+		SQLJson := struct {
+			baseStreamEventJson
+			SQL string `json:"sql"`
+		}{
+			baseStreamEventJson: b,
+			SQL:                 s.SQL,
+		}
+		return json.Marshal(SQLJson)
+	}
+	RowJson := struct {
+		baseStreamEventJson
+		RowValues     []*RowData `json:"rowValues"`
+		RowIdentifies []*RowData `json:"rowIdentifies"`
+	}{
+		baseStreamEventJson: b,
+		RowValues:           s.RowValues,
+		RowIdentifies:       s.RowIdentifies,
+	}
+	return json.Marshal(RowJson)
+}
+
+//RowData 行数据
+type RowData struct {
+	Columns []*ColumnData
+}
+
+//NewRowData 创建RowData
+func NewRowData(cnt int) *RowData {
+	return &RowData{
+		Columns: make([]*ColumnData, 0, cnt),
+	}
+}
+
 //ColumnData 单个列的信息
 type ColumnData struct {
 	Filed   string     // 字段信息
@@ -59,14 +125,30 @@ func NewColumnData(filed string, typ ColumnType, isEmpty bool) *ColumnData {
 	}
 }
 
-//RowData 行数据
-type RowData struct {
-	Columns []*ColumnData
+type baseColumnJson struct {
+	Filed   string `json:"filed"`
+	Type    string `json:"type"`
+	IsEmpty bool   `json:"isEmpty"`
 }
 
-//NewRowData 创建RowData
-func NewRowData(cnt int) *RowData {
-	return &RowData{
-		Columns: make([]*ColumnData, 0, cnt),
+func (c *ColumnData) MarshalJSON() ([]byte, error) {
+	b := baseColumnJson{
+		Filed:   c.Filed,
+		Type:    c.Type.String(),
+		IsEmpty: c.IsEmpty,
 	}
+
+	var i interface{} = string(c.Data)
+	if c.Data == nil {
+		i = nil
+	}
+	notNullJson := struct {
+		baseColumnJson
+		Data interface{} `json:"data"`
+	}{
+		baseColumnJson: b,
+		Data:           i,
+	}
+	return json.Marshal(notNullJson)
+
 }
