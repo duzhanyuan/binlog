@@ -1,6 +1,9 @@
 package binlog
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 const (
 	mysqlPrimaryKeyDescription    = "PRI"            //主键
@@ -86,7 +89,11 @@ func TestTransaction_MarshalJSON(t *testing.T) {
 					},
 				},
 			},
-			want: `{"nowPosition":{"filename":"binlog.000005","offset":0},"nextPosition":{"filename":"binlog.000005","offset":4},"timestamp":"1970-01-01 08:00:00 +0800 CST","events":[{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"insert","timestamp":"2014-08-12 09:06:32 +0800 CST","sql":"insert into vt_test_keyspace.vt_a(id,message)values(1076895760,'abcd')"},{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"update","timestamp":"2014-08-12 09:06:32 +0800 CST","rowValues":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":"abcd"}]}],"rowIdentifies":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":"abc"}]}]},{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"delete","timestamp":"2014-08-12 09:06:32 +0800 CST","rowValues":null,"rowIdentifies":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":null}]}]}]}`,
+			want: `{"nowPosition":{"filename":"binlog.000005","offset":0},"nextPosition":{"filename":"binlog.000005","offset":4},"timestamp":"` +
+				time.Unix(0, 0).Local().String() + `","events":[{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"insert","timestamp":"` +
+				time.Date(2014, time.August, 12, 1, 6, 32, 0, time.UTC).Local().String() + `","sql":"insert into vt_test_keyspace.vt_a(id,message)values(1076895760,'abcd')"},{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"update","timestamp":"` +
+				time.Date(2014, time.August, 12, 1, 6, 32, 0, time.UTC).Local().String() + `","rowValues":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":"abcd"}]}],"rowIdentifies":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":"abc"}]}]},{"name":{"db":"vt_test_keyspace","table":"vt_a"},"type":"delete","timestamp":"` +
+				time.Date(2014, time.August, 12, 1, 6, 32, 0, time.UTC).Local().String() + `","rowValues":null,"rowIdentifies":[{"Columns":[{"filed":"id","type":"Long","isEmpty":false,"data":"1076895760"},{"filed":"message","type":"Varchar","isEmpty":false,"data":null}]}]}]}`,
 		},
 	}
 	for _, v := range testCases {
