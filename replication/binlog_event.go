@@ -1,12 +1,17 @@
-//Package replication 用于解析binlog的格式，是从github.com/youtube/vitess/go/mysql的基础上移植过来，主要功能如下：
-// 完全支持mysql 5.6.x的所有数据格式解析，
-// 支持5.7.x的绝大多数数据格式解析，仅仅不支持JSON数据。
-//
-// github.com/youtube/vitess/go/mysql已经完整地支持mysql 5.6+所有的bonlog解析，但是由于以下原因需要修改：
-// 该包在vitess中有较多依赖，不便在其他项目中使用，
-// 该包的mysql协议有些变化，如Decimal数据小数点后的缺少前置0等问题。
-//
-// 目前已经支持mysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更，未来将支持全部
+/*
+Package replication 用于将binlog解析成可视的数据或者sql语句
+是从github.com/youtube/vitess/go/mysql的基础上移植过来，其
+主要功能如下：1.完全支持mysql 5.6.x的所有数据格式解析，2.支持
+5.7.x的绝大多数数据格式解析，仅仅不支持JSON数据。
+
+github.com/youtube/vitess/go/mysql已经完整地支持mysql 5.6以及
+mysql 5.7所有的bonlog解析，但是由于以下原因需要修改：1。该包不够
+轻量级，在vitess中有较多依赖，不便在其他项目中使用。2.该包的mysql
+协议有些变化，如Decimal数据小数点后的缺少前置0等问题。
+
+目前已经支持mysql 5.6.x以及5.7.x除了JSON的所有数据类型变更，未来将
+支持全部
+*/
 package replication
 
 import (

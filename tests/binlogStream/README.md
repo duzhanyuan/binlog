@@ -3,7 +3,7 @@
 binlogStream将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更,以json格式输出，是[binlog](https://github.com/onlyac0611/binlog)测试的一个例子
 
 ## Requests
-+ mysql 5.6+
++ mysql 5.6/mysql 5.7
 + golang 1.9+
 
 ## Installation
@@ -29,7 +29,7 @@ FLUSH PRIVILEGES;                                                               
 
 ### Run
 + 使用程序./binlogStream运行
-+ 该程序的mysql数据库在本机
++ 该程序的mysql数据库在本机,版本5.7.27
 + 测试脚本为tests/type_test.sql
 + 所有数据变更输出在transaction.txt
 

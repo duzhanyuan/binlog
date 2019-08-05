@@ -1,12 +1,3 @@
-// Package dump 用于dump协议交互的，从github.com/go-sql-driver/mysql的基础上修改而来，主要功能如下：
-// 通过MysqlConn可以执行简单的sql命令，如set命令，
-// 通过MysqlConn来和mysql库进行binlog dump
-//
-// github.com/go-sql-driver/mysql已经支持了所有的协议包的读写，但是由于以下原因需要修改：
-// 该包不支持dump协议的交互，
-// 该包在解析mysql数据时使用了缓存，导致与event冲突。
-//
-// 目前dump已经支持单条连接完成dump协议的交互，取消了缓存机制，使其与event不再冲突。
 package dump
 
 import (
