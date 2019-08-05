@@ -1,12 +1,16 @@
 # binlog
 
-[![Go Report Card][report-img]][report][![GoDoc][doc-img]][doc][![Build Status][ci-img]][ci][![Coverage Status][cov-img]][cov][![LICENSE][license-img]][license]
+[![Go Report Card][report-img]][report]
+[![Coverage Status][cov-img]][cov]
+[![Build Status][ci-img]][ci]
+[![GoDoc][doc-img]][doc]
+[![LICENSE][license-img]][license]
 
 binlog将自己伪装成slave获取mysql主从复杂流来获取mysql数据库的数据变更，提供轻量级，快速的dump协议交互以及binlog的row模式下的格式解析
 
 ## Features
 + 轻量级，快速的dump协议交互以及binlog的row模式格式解析
-+ 支持mysql 5.6.x以及5.7.x除了JSON，几何类型的所有数据类型变更
++ 支持mysql5.6以及mysql5.7除了JSON的所有数据类型变更
 + 支持使用完整dump协议连接数据库并接受binlog数据
 + 提供函数来接受解析后完整的事务数据
 + 事务数据提供变更的列名，列数据类型，bytes类型的数据
@@ -33,11 +37,11 @@ See the [binlogStream](tests/binlogStream/README.md) and [documentation][doc] fo
 
 [report-img]: https://goreportcard.com/badge/github.com/onlyac0611/binlog
 [report]: https://goreportcard.com/report/github.com/onlyac0611/binlog
-[doc-img]: https://godoc.org/github.com/onlyac0611/binlog?status.svg
-[doc]: https://godoc.org/github.com/onlyac0611/binlog
-[ci-img]: https://travis-ci.com/onlyac0611/binlog.svg?branch=master
-[ci]: https://travis-ci.com/onlyac0611/binlog
 [cov-img]: https://codecov.io/gh/onlyac0611/binlog/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/onlyac0611/binlog
+[ci-img]: https://travis-ci.com/onlyac0611/binlog.svg?branch=master
+[ci]: https://travis-ci.com/onlyac0611/binlog
+[doc-img]: https://godoc.org/github.com/onlyac0611/binlog?status.svg
+[doc]: https://godoc.org/github.com/onlyac0611/binlog
 [license-img]: https://img.shields.io/badge/License-Apache%202.0-blue.svg
 [license]: https://github.com/onlyac0611/binlog/blob/master/LICENSE
